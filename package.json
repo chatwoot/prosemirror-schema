@@ -10,7 +10,8 @@
     "type": "git",
     "url": "git+https://github.com/chatwoot/woot-prosemirror-schema.git"
   },
-  "author": "Nithin David <webognithin@gmail.com>",
+  "files": ["src/*"],
+  "author": "Nithin David <nithin@chatwoot.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/chatwoot/woot-prosemirror-schema/issues"
