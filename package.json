@@ -1,0 +1,19 @@
+{
+  "name": "woot-prosemirror-schema",
+  "version": "1.0.0",
+  "description": "Schema setup for using prosemirror in chatwoot. Based on 👉 https://github.com/ProseMirror/prosemirror-example-setup/",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chatwoot/woot-prosemirror-schema.git"
+  },
+  "author": "Nithin David <webognithin@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chatwoot/woot-prosemirror-schema/issues"
+  },
+  "homepage": "https://github.com/chatwoot/woot-prosemirror-schema#readme"
+}
