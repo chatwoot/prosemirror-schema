@@ -8,13 +8,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chatwoot/woot-prosemirror-schema.git"
+    "url": "git+https://github.com/chatwoot/prosemirror-schema.git"
   },
   "files": ["src/*"],
   "author": "Nithin David <nithin@chatwoot.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/chatwoot/woot-prosemirror-schema/issues"
+    "url": "https://github.com/chatwoot/prosemirror-schema/issues"
   },
-  "homepage": "https://github.com/chatwoot/woot-prosemirror-schema#readme"
+  "homepage": "https://github.com/chatwoot/prosemirror-schema#readme"
 }
