@@ -59,7 +59,7 @@ const mentionNode = {
 
 const addMentionNodes = nodes => nodes.append({ mention: mentionNode });
 
-const schemaWithMentions = new Schema({
+export const schemaWithMentions = new Schema({
   nodes: addMentionNodes(schema.spec.nodes),
   marks: schema.spec.marks,
 });
