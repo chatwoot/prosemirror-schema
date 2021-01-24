@@ -1,11 +1,8 @@
-import { EditorState } from 'prosemirror-state';
 import {
   schema,
-  defaultMarkdownParser,
   MarkdownParser,
   MarkdownSerializer,
 } from 'prosemirror-markdown';
-import { wootWriterSetup } from '@chatwoot/prosemirror-schema';
 
 import { Schema } from 'prosemirror-model';
 
@@ -66,19 +63,10 @@ const schemaWithMentions = new Schema({
   nodes: addMentionNodes(schema.spec.nodes),
   marks: schema.spec.marks,
 });
-const addMentionsToMarkdownParser = parser => {
+
+export const addMentionsToMarkdownParser = parser => {
   return new MarkdownParser(schemaWithMentions, parser.tokenizer, {
     ...parser.tokens,
     mention: mentionParser(),
   });
 };
-
-export const createState = (content, placeholder, plugins = []) =>
-  EditorState.create({
-    doc: addMentionsToMarkdownParser(defaultMarkdownParser).parse(content),
-    plugins: wootWriterSetup({
-      schema: schemaWithMentions,
-      placeholder,
-      plugins,
-    }),
-  });
