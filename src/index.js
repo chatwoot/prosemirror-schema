@@ -51,6 +51,7 @@ export { buildMenuItems, buildKeymap, buildInputRules };
 //     Can be used to override the menu content.
 export function wootWriterSetup(options) {
   let plugins = [
+    ...(options.plugins || []),
     buildInputRules(options.schema),
     keymap(buildKeymap(options.schema, options.mapKeys)),
     keymap(baseKeymap),
