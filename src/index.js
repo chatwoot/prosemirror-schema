@@ -57,6 +57,7 @@ export function wootWriterSetup(options) {
     dropCursor(),
     gapCursor(),
     Placeholder(options.placeholder),
+    ...(options.plugins || []),
   ];
   if (options.menuBar !== false)
     plugins.push(
