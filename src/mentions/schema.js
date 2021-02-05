@@ -16,7 +16,7 @@ const mentionParser = () => ({
 
 const markdownSerializer = () => (state, node) => {
   const uri = state.esc(
-    `mention://user/${node.attrs.userId}/${node.attrs.userFullName}`
+    `mention://user/${node.attrs.userId}/${encodeURIComponent(node.attrs.userFullName)}`
   );
   const escapedDisplayName = state.esc('@' + (node.attrs.userFullName || ''));
 
