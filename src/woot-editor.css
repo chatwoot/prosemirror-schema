@@ -231,6 +231,10 @@ li.ProseMirror-selectednode:after {
     outline: none;
 }
 
+.ProseMirror p {
+    margin-bottom: .5rem;
+}
+
 .ProseMirror .empty-node::before {
     position: absolute;
     color: #aaa;
