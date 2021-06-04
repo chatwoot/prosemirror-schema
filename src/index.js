@@ -11,6 +11,13 @@ import { buildKeymap } from './keymap';
 import { buildInputRules } from './inputrules';
 import Placeholder from './Placeholder';
 
+export { EditorState } from 'prosemirror-state';
+export { EditorView } from 'prosemirror-view';
+export {
+  defaultMarkdownParser,
+  defaultMarkdownSerializer,
+} from 'prosemirror-markdown';
+
 export { buildMenuItems, buildKeymap, buildInputRules };
 
 // !! This module exports helper functions for deriving a set of basic

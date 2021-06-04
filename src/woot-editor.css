@@ -148,7 +148,7 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror ul,
 .ProseMirror ol {
-    padding-left: 30px;
+    padding-left: 16px;
 }
 
 .ProseMirror blockquote {
@@ -232,7 +232,7 @@ li.ProseMirror-selectednode:after {
 }
 
 .ProseMirror p {
-    margin-bottom: 1em;
+    margin-bottom: 8px;
 }
 
 .ProseMirror .empty-node::before {
