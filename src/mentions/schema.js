@@ -2,9 +2,11 @@ import {
   schema,
   MarkdownParser,
   MarkdownSerializer,
+  defaultMarkdownParser,
+  defaultMarkdownSerializer,
 } from 'prosemirror-markdown';
 
-import { Schema } from 'prosemirror-model';
+import { Schema, DOMParser } from 'prosemirror-model';
 
 const mentionParser = () => ({
   node: 'mention',
@@ -16,18 +18,31 @@ const mentionParser = () => ({
 
 const markdownSerializer = () => (state, node) => {
   const uri = state.esc(
-    `mention://user/${node.attrs.userId}/${encodeURIComponent(node.attrs.userFullName)}`
+    `mention://user/${node.attrs.userId}/${encodeURIComponent(
+      node.attrs.userFullName
+    )}`
   );
   const escapedDisplayName = state.esc('@' + (node.attrs.userFullName || ''));
 
   state.write(`[${escapedDisplayName}](${uri})`);
 };
 
-export const addMentionsToMarkdownSerializer = serializer =>
-  new MarkdownSerializer(
-    { mention: markdownSerializer(), ...serializer.nodes },
-    serializer.marks
+export const addMentionsToMarkdownSerializer = () => {
+  const result = new MarkdownSerializer(
+    {
+      mention: markdownSerializer(),
+      ...defaultMarkdownSerializer.nodes,
+    },
+    defaultMarkdownSerializer.marks
   );
+  return result;
+};
+
+export const plainTextSerializer = () => {
+  const { text, paragraph, hard_break } = defaultMarkdownSerializer.nodes;
+  const result = new MarkdownSerializer({ text, paragraph, hard_break }, {});
+  return result;
+};
 
 const mentionNode = {
   attrs: { userFullName: { default: '' }, userId: { default: '' } },
@@ -64,9 +79,49 @@ export const schemaWithMentions = new Schema({
   marks: schema.spec.marks,
 });
 
-export const addMentionsToMarkdownParser = parser => {
-  return new MarkdownParser(schemaWithMentions, parser.tokenizer, {
-    ...parser.tokens,
-    mention: mentionParser(),
-  });
+export const addMentionsToMarkdownParser = () => {
+  return new MarkdownParser(
+    schemaWithMentions,
+    defaultMarkdownParser.tokenizer,
+    {
+      ...defaultMarkdownParser.tokens,
+      mention: mentionParser(),
+    }
+  );
 };
+
+export const defaultPlainTextSchema = new Schema({
+  nodes: {
+    doc: {
+      content: 'block+',
+    },
+
+    paragraph: {
+      content: 'inline*',
+      group: 'block',
+      parseDOM: [{ tag: 'p' }],
+      toDOM() {
+        return ['p', 0];
+      },
+    },
+
+    text: {
+      group: 'inline',
+    },
+
+    hard_break: {
+      inline: true,
+      group: 'inline',
+      selectable: false,
+      parseDOM: [{ tag: 'br' }],
+      toDOM() {
+        return ['br'];
+      },
+    },
+  },
+
+  marks: {},
+});
+
+export const plainTextParser = () =>
+  DOMParser.fromSchema(defaultPlainTextSchema);

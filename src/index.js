@@ -13,10 +13,6 @@ import Placeholder from './Placeholder';
 
 export { EditorState } from 'prosemirror-state';
 export { EditorView } from 'prosemirror-view';
-export {
-  defaultMarkdownParser,
-  defaultMarkdownSerializer,
-} from 'prosemirror-markdown';
 
 export { buildMenuItems, buildKeymap, buildInputRules };
 
