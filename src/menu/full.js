@@ -4,9 +4,9 @@ import { MenuItem } from 'prosemirror-menu';
 import { toggleMark, setBlockType } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList } from 'prosemirror-schema-list';
-import { openPrompt } from './prompt';
-import { TextField } from './TextField.js';
-import { markActive } from './utils.js';
+import { openPrompt } from '../prompt';
+import { TextField } from '../TextField';
+import { markActive } from '../utils';
 import {
   BoldIcon,
   ItalicsIcon,
@@ -19,7 +19,7 @@ import {
   Heading1Icon,
   TextNumberListIcon,
   BulletListIcon,
-} from './icons.js';
+} from '../icons.js';
 
 // Helpers to create specific types of items
 
