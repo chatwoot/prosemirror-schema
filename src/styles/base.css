@@ -1,17 +1,4 @@
-:root {
-    --s-25: #F8FAFC;
-    --s-50: #F1F5F8;
-    --s-75: #EBF0F5;
-    --s-100: #E4EBF1;
-    --s-200: #C9D7E3;
-    --s-300: #AEC3D5;
-    --s-400: #93AFC8;
-    --s-500: #779BBB;
-    --s-600: #446888;
-    --s-700: #37546D;
-    --s-800: #293F51;
-    --s-900: #1B2836;
-}
+@import url('variables.css');
 
 .ProseMirror {
     position: relative;
@@ -27,17 +14,29 @@
 .ProseMirror pre {
     white-space: pre-wrap;
     background: var(--s-900);
-    border-radius: 7px;
-    padding: 24px 16px;
+    border-radius: var(--border-radius-medium);
+    padding: var(--space-normal) var(--space-small);
+    margin-bottom: var(--space-small);
+}
+
+.ProseMirror strong code {
+    background: var(--s-75);
+    font-family: "ui-monospace",
+        "SFMono-Regular",
+        "Menlo",
+        "Monaco",
+        "Consolas",
+        '"Liberation Mono"',
+        '"Courier New"',
+        "monospace";
+    border-radius: var(--border-radius-small);
+    padding: var(--space-smaller);
+    color: var(--s-800);
 }
 
 .ProseMirror pre code {
     background: transparent;
     color: #fff;
-}
-
-.ProseMirror li {
-    position: relative;
 }
 
 .ProseMirror-hideselection *::selection {
@@ -88,18 +87,13 @@ li.ProseMirror-selectednode:after {
 }
 
 .ProseMirror-menuitem {
-    margin-right: 3px;
+    margin-right: var(--space-small);
     display: inline-block;
 }
 
 .ProseMirror-menu-active {
-    background: #eee;
-    border-radius: 4px;
-}
-
-.ProseMirror-menu-active {
-    background: #eee;
-    border-radius: 4px;
+    background: var(--s-75);
+    border-radius: var(--border-radius-small);
 }
 
 .ProseMirror-menu-disabled {
@@ -108,13 +102,12 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror-menubar {
     position: relative;
-    min-height: var(--space-two);
-    color: var(--color-heading);
+    min-height: var(--space-medium);
+    color: var(--s-700);
     padding: var(--space-small) 0;
     top: 0;
-    left: var(--space-minus-small);
     right: 0;
-    background: transparent;
+    background: white;
     z-index: 10;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
@@ -125,9 +118,12 @@ li.ProseMirror-selectednode:after {
     display: inline-block;
     line-height: 0.8;
     vertical-align: -2px;
-    /* Compensate for padding */
-    padding: 2px 8px;
+    padding: var(--space-small);
     cursor: pointer;
+}
+
+.ProseMirror-icon svg {
+    width: var(--space-normal) !important;
 }
 
 .ProseMirror-menu-disabled.ProseMirror-icon {
@@ -136,7 +132,7 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror-icon svg {
     fill: currentColor;
-    height: 2em;
+    height: var(--space-normal);
 }
 
 .ProseMirror-icon span {
@@ -171,14 +167,25 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror ul,
 .ProseMirror ol {
-    padding-left: 16px;
+    padding-left: var(--space-normal);
+    margin-left: 0;
 }
 
+.ProseMirror li {
+    position: relative;
+    padding-left: var(--space-smaller);
+}
+
+
 .ProseMirror blockquote {
-    padding-left: 16px;
+    padding-left: var(--space-normal);
     padding-top: 0;
-    border-left: 4px solid var(--s-200);
-    margin: 24px 0;
+    border-left: var(--space-smaller) solid var(--s-200);
+    margin: var(--space-medium) 0;
+}
+
+.ProseMirror blockquote p {
+    color: var(--s-600);
 }
 
 .ProseMirror-prompt {
@@ -249,13 +256,17 @@ li.ProseMirror-selectednode:after {
 }
 
 .ProseMirror {
-    padding: 4px 8px 4px 14px;
-    line-height: 1.2;
+    padding: var(--space-smaller);
+    line-height: 1.4;
     outline: none;
 }
 
 .ProseMirror p {
-    margin-bottom: 8px;
+    margin-bottom: var(--space-small);
+}
+
+.ProseMirror li::marker {
+    font-size: var(--font-size-small);
 }
 
 .ProseMirror .empty-node::before {
