@@ -155,7 +155,7 @@ function wrapListItem(nodeType, options) {
   return cmdItem(wrapInList(nodeType, options.attrs), options);
 }
 
-export function buildFullEditorMenuItems(schema) {
+export function buildArticleEditorMenu(schema) {
   let r = {
     toggleStrong: markItem(schema.marks.strong, {
       title: 'Toggle strong style',
