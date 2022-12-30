@@ -1,4 +1,5 @@
-:root {
+.ProseMirror,
+.ProseMirror-menubar-wrapper {
     --s-25: #F8FAFC;
     --s-50: #F1F5F8;
     --s-75: #EBF0F5;
