@@ -1,0 +1,87 @@
+@import url(base.scss);
+
+.editor-root.editor--article {
+    position: relative;
+
+    .ProseMirror-menubar-wrapper .ProseMirror-menubar .ProseMirror-menuitem .ProseMirror-icon {
+        margin-right: var(--space-normal);
+        font-size: var(--font-size-small);
+    }
+
+    .ProseMirror {
+        p {
+            font-size: var(--font-size-medium);
+            line-height: 1.77;
+        }
+
+        strong code {
+            font-size: var(--font-size-medium);
+        }
+
+        pre code {
+            font-size: var(--font-size-default);
+            font-weight: var(--font-weight-medium);
+            line-height: 1.6;
+        }
+
+        a {
+            font-weight: var(--font-weight-medium);
+            font-size: var(--font-size-medium);
+        }
+
+
+        hr {
+            margin: var(--space-larger) 0;
+            border-color: var(--s-100);
+        }
+
+        h1 {
+            margin-bottom: var(--space-large);
+        }
+
+        h2 {
+            margin-bottom: var(--space-medium);
+        }
+
+        h3 {
+            margin-bottom: var(--space-normal);
+        }
+
+        h4,
+        h5 {
+            margin-bottom: var(--space-small);
+        }
+
+
+        h6 {
+            margin-bottom: var(--space-smaller);
+        }
+
+        .ProseMirror-icon svg {
+            width: var(--space-medium) !important;
+        }
+
+        li::marker {
+            font-size: var(--font-size-medium);
+        }
+
+        ul,
+        ol {
+            padding-left: var(--space-medium);
+        }
+
+        pre {
+            padding: var(--space-medium) var(--space-normal);
+            margin-bottom: var(--space-normal);
+        }
+
+        p {
+            margin-bottom: var(--space-normal);
+        }
+    }
+
+    .ProseMirror-menubar {
+        margin-bottom: var(--space-normal);
+        padding: var(--space-normal) 0;
+    }
+}
