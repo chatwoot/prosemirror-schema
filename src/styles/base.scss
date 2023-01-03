@@ -93,10 +93,7 @@ li.ProseMirror-selectednode:after {
     vertical-align: -2px;
     padding: var(--space-small);
     cursor: pointer;
-}
-
-.ProseMirror-icon svg {
-    width: var(--space-slab) !important;
+    box-sizing: content-box;
 }
 
 .ProseMirror-menu-disabled.ProseMirror-icon {
@@ -105,7 +102,8 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror-icon svg {
     fill: currentColor;
-    height: var(--space-normal);
+    width: var(--space-slab) !important;
+    height: var(--space-slab);
 }
 
 .ProseMirror-icon span {
@@ -210,10 +208,10 @@ li.ProseMirror-selectednode:after {
 
 
     blockquote {
-        padding-left: var(--space-normal);
+        padding-left: var(--space-small);
         padding-top: 0;
         border-left: var(--space-smaller) solid var(--s-200);
-        margin: var(--space-medium) 0;
+        margin: var(--space-normal) 0;
     }
 
     blockquote p {
@@ -228,7 +226,8 @@ li.ProseMirror-selectednode:after {
         margin-bottom: var(--space-small);
     }
 
-    strong code {
+    strong code,
+    p code {
         background: var(--s-75);
         font-family: "ui-monospace",
             "SFMono-Regular",
