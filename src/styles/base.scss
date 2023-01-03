@@ -1,4 +1,5 @@
-@import url('variables.css');
+@use '_variables.scss';
+
 
 .ProseMirror {
     padding: var(--space-smaller);

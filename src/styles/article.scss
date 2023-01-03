@@ -1,4 +1,4 @@
-@import url(base.scss);
+@use 'base.scss';
 
 .editor-root.editor--article {
     position: relative;
