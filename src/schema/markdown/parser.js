@@ -15,7 +15,7 @@ export const baseSchemaToMdMapping = {
   nodes: {
     blockquote: 'blockquote',
     paragraph: 'paragraph',
-    code_block: ['code'],
+    code_block: ['code', 'fence'],
     list_item: 'list',
   },
   marks: {
@@ -33,6 +33,11 @@ export const baseNodesMdToPmMapping = {
   softbreak: { node: 'hard_break' },
   hardbreak: { node: 'hard_break' },
   code_block: { block: 'code_block' },
+  fence: {
+    block: 'code_block',
+    // we trim any whitespaces around language definition
+    attrs: tok => ({ language: (tok.info && tok.info.trim()) || null }),
+  },
   list_item: { block: 'list_item' },
   bullet_list: { block: 'bullet_list' },
   ordered_list: {
