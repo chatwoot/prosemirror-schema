@@ -1,4 +1,3 @@
-/* eslint-disable no-useless-escape */
 import { inputRules } from 'prosemirror-inputrules';
 import { applyMarkOnRange } from '../commands';
 import { createInputRule } from '../utils';
@@ -12,7 +11,7 @@ const validCombos = {
 };
 
 const validRegex = (char, str) => {
-  for (let i = 0; i < validCombos[char].length; i += 1) {
+  for (let i = 0; i < validCombos[char].length; i++) {
     const ch = validCombos[char][i];
     if (ch === str) {
       return true;
@@ -248,7 +247,7 @@ export function textFormattingInputRules(schema) {
   if (rules.length !== 0) {
     return inputRules({ rules });
   }
-  return false;
+  return;
 }
 
 export default textFormattingInputRules;

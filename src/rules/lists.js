@@ -119,12 +119,11 @@ function getOrderedListInputRules(schema) {
 
 export function listInputRules(schema) {
   const rules = [];
-  console.log('rules', schema);
-  if (schema.nodes.bullet_list) {
+  if (schema.nodes['bullet_list']) {
     rules.push(...getBulletListInputRules(schema));
   }
 
-  if (schema.nodes.ordered_list) {
+  if (schema.nodes['ordered_list']) {
     rules.push(...getOrderedListInputRules(schema));
   }
 
@@ -169,33 +168,6 @@ function mergeLists(listItem, range) {
   return command => {
     return (state, dispatch) =>
       command(state, tr => {
-        /* we now need to handle the case that we lifted a sublist out,
-         * and any listItems at the current level get shifted out to
-         * their own new list; e.g.:
-         *
-         * unorderedList
-         *  listItem(A)
-         *  listItem
-         *    unorderedList
-         *      listItem(B)
-         *  listItem(C)
-         *
-         * becomes, after unindenting the first, top level listItem, A:
-         *
-         * content of A
-         * unorderedList
-         *  listItem(B)
-         * unorderedList
-         *  listItem(C)
-         *
-         * so, we try to merge these two lists if they're of the same type, to give:
-         *
-         * content of A
-         * unorderedList
-         *  listItem(B)
-         *  listItem(C)
-         */
-
         const $start = state.doc.resolve(range.start);
         const $end = state.doc.resolve(range.end);
         const $join = tr.doc.resolve(tr.mapping.map(range.end - 1));
@@ -226,12 +198,6 @@ export function outdentList() {
     const { list_item } = state.schema.nodes;
     const { $from, $to } = state.selection;
     if (isInsideListItem(state)) {
-      // if we're backspacing at the start of a list item, unindent it
-      // take the the range of nodes we might be lifting
-
-      // the predicate is for when you're backspacing a top level list item:
-      // we don't want to go up past the doc node, otherwise the range
-      // to clear will include everything
       let range = $from.blockRange(
         $to,
         node => node.childCount > 0 && node.firstChild.type === list_item
@@ -250,11 +216,6 @@ export function outdentList() {
   };
 }
 
-/**
- * Implemetation taken and modified for our needs from PM
- * @param itemType Node
- * Splits the list items, specific implementation take from PM
- */
 function splitListItem(itemType) {
   return function (state, dispatch) {
     const ref = state.selection;
@@ -268,7 +229,6 @@ function splitListItem(itemType) {
     if (grandParent.type !== itemType) {
       return false;
     }
-    /** --> The following line changed from the original PM implementation to allow list additions with multiple paragraphs */
     if (
       grandParent.content.content.length <= 1 &&
       $from.parent.content.size === 0 &&

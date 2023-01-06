@@ -126,12 +126,19 @@ prosemirror-menu@^1.1.4:
     prosemirror-history "^1.0.0"
     prosemirror-state "^1.0.0"
 
-prosemirror-model@1.18.3, prosemirror-model@^1.0.0, prosemirror-model@^1.1.0, prosemirror-model@^1.16.0, prosemirror-model@^1.8.1:
+prosemirror-model@^1.0.0, prosemirror-model@^1.1.0, prosemirror-model@^1.16.0, prosemirror-model@^1.2.0, prosemirror-model@^1.8.1:
   version "1.18.3"
   resolved "https://registry.yarnpkg.com/prosemirror-model/-/prosemirror-model-1.18.3.tgz#d1026a78cff928fd600e90d87cf7d162e0a4e3fd"
   integrity sha512-yUVejauEY3F1r7PDy4UJKEGeIU+KFc71JQl5sNvG66CLVdKXRjhWpBW6KMeduGsmGOsw85f6EGrs6QxIKOVILA==
   dependencies:
     orderedmap "^2.0.0"
+
+prosemirror-schema-basic@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/prosemirror-schema-basic/-/prosemirror-schema-basic-1.2.0.tgz#c33ad74426efae1d41e2260371866f623e8eb10e"
+  integrity sha512-JMN/ammP94ObOUS6cpIy121r0MEDN9V95mAxFVALwC4bbmhpWXGjBGHTA5LHPPdbqZKyR6Jar1Akv4Z5k9CNLw==
+  dependencies:
+    prosemirror-model "^1.2.0"
 
 prosemirror-schema-list@^1.1.4:
   version "1.1.4"

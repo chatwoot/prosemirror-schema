@@ -1,25 +1,34 @@
-import { schema } from 'prosemirror-markdown';
+import { orderedList, bulletList, listItem } from 'prosemirror-schema-list';
 import { Schema } from 'prosemirror-model';
-import { tableNodes } from 'prosemirror-tables';
+import { schema } from 'prosemirror-schema-basic';
 
-export const articleSchema = new Schema({
-  nodes: schema.spec.nodes.append(
-    tableNodes({
-      tableGroup: 'block',
-      cellContent: 'block+',
-      cellAttributes: {
-        background: {
-          default: null,
-          getFromDOM(dom) {
-            return dom.style.backgroundColor || null;
-          },
-          setDOMAttr(value, attrs) {
-            if (value)
-              attrs.style = (attrs.style || '') + `background-color: ${value};`;
-          },
+export const fullSchema = new Schema({
+  nodes: schema.spec.nodes.append({
+    ordered_list: Object.assign(orderedList, {
+      content: 'list_item+',
+      group: 'block',
+    }),
+    bullet_list: Object.assign(bulletList, {
+      content: 'list_item+',
+      group: 'block',
+    }),
+    list_item: Object.assign(listItem, { content: 'paragraph block*' }),
+  }),
+  // link, em, strong, code, strike
+  marks: schema.spec.marks.append({
+    strike: {
+      parseDOM: [
+        { tag: 's' },
+        { tag: 'del' },
+        { tag: 'strike' },
+        {
+          style: 'text-decoration',
+          getAttrs: value => value === 'line-through',
         },
-      },
-    })
-  ),
-  marks: schema.spec.marks,
+      ],
+      toDOM: () => ['s', 0],
+    },
+  }),
 });
+
+export default fullSchema;

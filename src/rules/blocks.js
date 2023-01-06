@@ -3,14 +3,31 @@ import {
   wrappingInputRule,
   inputRules,
 } from 'prosemirror-inputrules';
-import { safeInsert } from 'prosemirror-utils';
+
 import { leafNodeReplacementCharacter } from '../utils';
-import { createInputRule, defaultInputRuleHandler } from '../utils';
 import {
   isConvertableToCodeBlock,
   transformToCodeBlockAction,
   insertBlock,
 } from '../commands';
+import { safeInsert } from 'prosemirror-utils';
+import { createInputRule, defaultInputRuleHandler } from '../utils';
+
+const MAX_HEADING_LEVEL = 5;
+
+function getHeadingLevel(match) {
+  return {
+    level: match[1].length,
+  };
+}
+
+export function headingRule(nodeType, maxLevel) {
+  return textblockTypeInputRule(
+    new RegExp('^(#{1,' + maxLevel + '})\\s$'),
+    nodeType,
+    getHeadingLevel
+  );
+}
 
 export function blockQuoteRule(nodeType) {
   return wrappingInputRule(/^\s*>\s$/, nodeType);
@@ -18,6 +35,38 @@ export function blockQuoteRule(nodeType) {
 
 export function codeBlockRule(nodeType) {
   return textblockTypeInputRule(/^```$/, nodeType);
+}
+
+/**
+ * Get heading rules
+ *
+ * @param {Schema} schema
+ * @returns {}
+ */
+function getHeadingRules(schema) {
+  // '# ' for h1, '## ' for h2 and etc
+  const hashRule = defaultInputRuleHandler(
+    headingRule(schema.nodes.heading, MAX_HEADING_LEVEL),
+    true
+  );
+
+  const leftNodeReplacementHashRule = createInputRule(
+    new RegExp(`${leafNodeReplacementCharacter}(#{1,6})\\s$`),
+    (state, match, start, end) => {
+      const level = match[1].length;
+      return insertBlock(
+        state,
+        schema.nodes.heading,
+        `heading${level}`,
+        start,
+        end,
+        { level }
+      );
+    },
+    true
+  );
+
+  return [hashRule, leftNodeReplacementHashRule];
 }
 
 /**
@@ -103,8 +152,12 @@ function getCodeBlockRules(schema) {
   return [threeTildeRule, leftNodeReplacementThreeTildeRule];
 }
 
-export function codeInputRule(schema) {
+export function blocksInputRule(schema) {
   const rules = [];
+
+  if (schema.nodes.heading) {
+    rules.push(...getHeadingRules(schema));
+  }
 
   if (schema.nodes.blockquote) {
     rules.push(...getBlockQuoteRules(schema));
@@ -117,7 +170,7 @@ export function codeInputRule(schema) {
   if (rules.length !== 0) {
     return inputRules({ rules });
   }
-  return false;
+  return;
 }
 
-export default codeInputRule;
+export default blocksInputRule;

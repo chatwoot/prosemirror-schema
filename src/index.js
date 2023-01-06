@@ -8,86 +8,73 @@ import Placeholder from './Placeholder';
 
 export { EditorState, Selection } from 'prosemirror-state';
 export { EditorView } from 'prosemirror-view';
-export {
-  schema,
-  defaultMarkdownParser,
-  defaultMarkdownSerializer,
-} from 'prosemirror-markdown';
-
 import {
-  codeInputRule,
   listInputRules,
   linksInputRules,
   blocksInputRule,
+  baseKeyMaps,
   textFormattingInputRules,
 } from './rules';
 
-import { baseKeyMaps } from './keymap';
 import { buildArticleEditorMenu } from './menu/article';
 import { buildMessageEditorMenu } from './menu/message';
-import { tableEditing } from 'prosemirror-tables';
 
-export { articleSchema } from './schema/article';
+export { MessageMarkdownTransformer } from './schema/markdown/messageParser';
+export { ArticleMarkdownTransformer } from './schema/markdown/articleParser';
 
-export {
-  messageSchema,
-  addMentionsToMarkdownParser,
-  addMentionsToMarkdownSerializer,
-} from './schema/message';
+export { ArticleMarkdownSerializer } from './schema/markdown/articleSerializer';
+export { MessageMarkdownSerializer } from './schema/markdown/messageSerializer';
 
-export function wootArticleWriterSetup(options) {
+export { fullSchema } from './schema/article';
+export { messageSchema } from './schema/message';
+
+export function wootArticleWriterSetup(props) {
   let plugins = [
     history(),
-    baseKeyMaps(options.schema),
-    blocksInputRule(options.schema),
-    codeInputRule(options.schema),
-    textFormattingInputRules(options.schema),
-    linksInputRules(options.schema),
-    listInputRules(options.schema),
-    tableEditing(),
-
+    baseKeyMaps(props.schema),
+    blocksInputRule(props.schema),
+    textFormattingInputRules(props.schema),
+    linksInputRules(props.schema),
+    listInputRules(props.schema),
     dropCursor(),
     gapCursor(),
-    Placeholder(options.placeholder),
+    Placeholder(props.placeholder),
     menuBar({
-      floating: options.floatingMenu !== false,
-      content:
-        options.menuContent || buildArticleEditorMenu(options.schema).fullMenu,
+      floating: true,
+      content: buildArticleEditorMenu(props.schema).fullMenu,
     }),
     new Plugin({
       props: {
         attributes: { class: 'ProseMirror-woot-style' },
       },
     }),
-    ...(options.plugins || []),
+    ...(props.plugins || []),
   ];
 
   return plugins;
 }
 
-export function wootMessageWriterSetup(options) {
+export function wootMessageWriterSetup(props) {
   let plugins = [
+    ...(props.plugins || []),
     history(),
-    baseKeyMaps(options.schema),
-    codeInputRule(options.schema),
-    textFormattingInputRules(options.schema),
-    linksInputRules(options.schema),
-    listInputRules(options.schema),
-
+    baseKeyMaps(props.schema),
+    blocksInputRule(props.schema),
+    textFormattingInputRules(props.schema),
+    linksInputRules(props.schema),
+    listInputRules(props.schema),
     dropCursor(),
     gapCursor(),
-    Placeholder(options.placeholder),
+    Placeholder(props.placeholder),
     menuBar({
-      floating: options.floatingMenu !== false,
-      content:
-        options.menuContent || buildMessageEditorMenu(options.schema).fullMenu,
+      floating: true,
+      content: buildMessageEditorMenu(props.schema).fullMenu,
     }),
     new Plugin({
       props: {
         attributes: { class: 'ProseMirror-woot-style' },
       },
     }),
-    ...(options.plugins || []),
   ];
 
   return plugins;
