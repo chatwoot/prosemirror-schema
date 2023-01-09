@@ -13,7 +13,7 @@ import {
 import { safeInsert } from 'prosemirror-utils';
 import { createInputRule, defaultInputRuleHandler } from '../utils';
 
-const MAX_HEADING_LEVEL = 5;
+const MAX_HEADING_LEVEL = 6;
 
 function getHeadingLevel(match) {
   return {
