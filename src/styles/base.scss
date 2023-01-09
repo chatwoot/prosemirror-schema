@@ -223,7 +223,7 @@ li.ProseMirror-selectednode:after {
         white-space: pre-wrap;
         background: var(--s-900);
         border-radius: var(--border-radius-medium);
-        padding: var(--space-normal) var(--space-small);
+        padding: var(--space-small);
         margin-bottom: var(--space-small);
     }
 
@@ -246,6 +246,7 @@ li.ProseMirror-selectednode:after {
     pre code {
         background: transparent;
         color: #fff;
+        padding: 0;
     }
 
     p:first-child,

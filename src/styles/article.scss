@@ -81,7 +81,7 @@
         }
 
         pre {
-            padding: var(--space-medium) var(--space-normal);
+            padding: var(--space-normal);
             margin-bottom: var(--space-normal);
         }
 
@@ -91,7 +91,7 @@
     }
 
     .ProseMirror-menubar {
-        margin-bottom: var(--space-normal);
+        margin-bottom: var(--space-small);
         padding: var(--space-smaller) 0;
     }
 }
