@@ -49,7 +49,6 @@ function blockTypeIsActive(state, type, attrs) {
     const comparisonAttrs = {
       ...attrs,
     };
-    // debugger;
     if (currentNodeAtDepth.attrs.level) {
       comparisonAttrs.level = currentNodeAtDepth.attrs.level;
     }
