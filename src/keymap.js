@@ -5,7 +5,12 @@ import {
   createNewParagraphBelow,
   createNewParagraphAbove,
 } from './commands';
-import { enterKeyOnListCommand, indentList, outdentList } from './rules/lists';
+import {
+  enterKeyOnListCommand,
+  indentList,
+  outdentList,
+  splitListItem,
+} from './rules/lists';
 
 import {
   chainCommands,
@@ -79,17 +84,29 @@ export function baseKeyMaps(schema) {
     bind('Shift-Enter', cmd);
     if (mac) bind('Ctrl-Enter', cmd);
   }
+  const modEnter = mac ? 'Mod-Enter' : 'Ctrl-Enter';
+
   const enterCommands = [
     newlineInCode,
     createParagraphNear,
     liftEmptyBlock,
     splitBlock,
   ];
+
   if (schema.nodes.list_item) {
     enterCommands.unshift(enterKeyOnListCommand);
+
+    // TODO: Remove hacky fix
+    // This needs to done only when the editor sends messages on Enter.
+    // Currently Mod+enter command is never reached as it is overridden at the editor
+    //  side with Cmd+Enter for sending messages.
+    // Fix this by using a different keymap or overriding existing keymap on condition.
+
+    enterCommands.unshift(splitListItem(schema.nodes.list_item));
     bind('Tab', indentList());
     bind('Shift-Tab', outdentList());
   }
   bind('Enter', chainCommands.apply(null, enterCommands));
+  bind(modEnter, chainCommands.apply(null, enterCommands));
   return keymap(keys);
 }

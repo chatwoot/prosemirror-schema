@@ -216,7 +216,7 @@ export function outdentList() {
   };
 }
 
-function splitListItem(itemType) {
+export function splitListItem(itemType) {
   return function (state, dispatch) {
     const ref = state.selection;
     const $from = ref.$from;
