@@ -26,7 +26,7 @@ export const messageMdToPmMapping = {
 
 const md = MarkdownIt('zero', {
   html: false,
-  linkify: true,
+  linkify: false,
 });
 
 md.enable([
