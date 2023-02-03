@@ -19,6 +19,7 @@ import {
   Heading1Icon,
   TextNumberListIcon,
   BulletListIcon,
+  ImageUploadIcon,
 } from '../icons.js';
 
 // Helpers to create specific types of items
@@ -150,6 +151,28 @@ function headerItem(nodeType, options) {
   });
 }
 
+function imageUploadItem(nodeType, options) {
+  return new MenuItem({
+    title: 'Upload image',
+    icon: ImageUploadIcon,
+    enable() {
+      return true;
+    },
+    run(state, dispatch, view) {
+      const { $from } = state.selection;
+      const index = $from.index();
+      const node = $from.parent;
+      const attrs = {
+        src: 'https://via.placeholder.com/1280x720',
+      };
+      const imageNode = nodeType.create(attrs);
+      const transaction = state.tr.insert(index, imageNode);
+      view.dispatch(transaction);
+      return true;
+    },
+  });
+}
+
 function wrapListItem(nodeType, options) {
   return cmdItem(wrapInList(nodeType, options.attrs), options);
 }
@@ -203,6 +226,10 @@ export function buildArticleEditorMenu(schema) {
       run: redo,
       enable: state => redo(state),
       icon: RedoIcon,
+    }),
+    imageUploadItem: imageUploadItem(schema.nodes.image, {
+      title: 'Upload image',
+      icon: ImageUploadIcon,
     }),
   };
 
