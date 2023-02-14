@@ -2,7 +2,9 @@ import { inputRules } from 'prosemirror-inputrules';
 import { createInputRule } from '../utils';
 import LinkifyIt from 'linkify-it';
 
-const linkify = LinkifyIt();
+// This is a copy of the linkify-it regex, passing `undefined` for the schema
+// will use the default regex.
+const linkify = new LinkifyIt(undefined, { fuzzyLink: false });
 linkify.add('sourcetree:', 'http:');
 
 const tlds =
