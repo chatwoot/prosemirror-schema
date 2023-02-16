@@ -19,6 +19,7 @@ import {
   Heading1Icon,
   TextNumberListIcon,
   BulletListIcon,
+  ImageUploadIcon,
 } from '../icons.js';
 
 // Helpers to create specific types of items
@@ -150,11 +151,25 @@ function headerItem(nodeType, options) {
   });
 }
 
+function imageUploadItem(nodeType, onFileUpload) {
+  return new MenuItem({
+    title: 'Upload image',
+    icon: ImageUploadIcon,
+    enable() {
+      return true;
+    },
+    run() {
+      onFileUpload();
+      return true;
+    },
+  });
+}
+
 function wrapListItem(nodeType, options) {
   return cmdItem(wrapInList(nodeType, options.attrs), options);
 }
 
-export function buildArticleEditorMenu(schema) {
+export function buildArticleEditorMenu(schema, onFileUpload) {
   let r = {
     toggleStrong: markItem(schema.marks.strong, {
       title: 'Toggle strong style',
@@ -204,6 +219,7 @@ export function buildArticleEditorMenu(schema) {
       enable: state => redo(state),
       icon: RedoIcon,
     }),
+    imageUploadItem: imageUploadItem(schema.nodes.image, onFileUpload),
   };
 
   let cut = arr => arr.filter(x => x);
@@ -218,6 +234,7 @@ export function buildArticleEditorMenu(schema) {
       r.toggleH3,
       r.wrapBulletList,
       r.wrapOrderedList,
+      r.imageUploadItem,
     ]),
   ];
   r.fullMenu = r.inlineMenu.concat([[r.undoItem, r.redoItem]], r.blockMenu);
