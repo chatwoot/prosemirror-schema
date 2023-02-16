@@ -8,7 +8,7 @@ export default (placeholderText = '') => {
         const decorations = [];
 
         const decorate = (node, pos) => {
-          if (node.type.isBlock && node.childCount === 0) {
+          if (state.doc.content.size === 2) {
             decorations.push(
               Decoration.node(pos, pos + node.nodeSize, {
                 class: 'empty-node',

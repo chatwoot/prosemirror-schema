@@ -1,10 +1,22 @@
 /* eslint-disable no-cond-assign */
 /* eslint-disable no-plusplus */
-import { undoItem, redoItem, icons, MenuItem } from 'prosemirror-menu';
+import { MenuItem } from 'prosemirror-menu';
 import { toggleMark } from 'prosemirror-commands';
+import { undo, redo } from 'prosemirror-history';
 import { wrapInList } from 'prosemirror-schema-list';
-import { openPrompt } from './prompt';
-import { TextField } from './TextField';
+import { openPrompt } from '../prompt';
+import { TextField } from '../TextField';
+import { markActive } from '../utils';
+import {
+  BoldIcon,
+  ItalicsIcon,
+  CodeIcon,
+  UndoIcon,
+  RedoIcon,
+  LinkIcon,
+  TextNumberListIcon,
+  BulletListIcon,
+} from '../icons.js';
 
 // Helpers to create specific types of items
 
@@ -21,12 +33,6 @@ function cmdItem(cmd, options) {
     passedOptions[options.enable ? 'enable' : 'select'] = state => cmd(state);
 
   return new MenuItem(passedOptions);
-}
-
-function markActive(state, type) {
-  let { from, $from, to, empty } = state.selection;
-  if (empty) return type.isInSet(state.storedMarks || $from.marks());
-  return state.doc.rangeHasMark(from, to, type);
 }
 
 function markItem(markType, options) {
@@ -46,7 +52,7 @@ function markItem(markType, options) {
 function linkItem(markType) {
   return new MenuItem({
     title: 'Add or remove link',
-    icon: icons.link,
+    icon: LinkIcon,
     active(state) {
       return markActive(state, markType);
     },
@@ -81,33 +87,42 @@ function wrapListItem(nodeType, options) {
   return cmdItem(wrapInList(nodeType, options.attrs), options);
 }
 
-export function buildMenuItems(schema) {
-  let r = {};
-  let type;
-  if ((type = schema.marks.strong))
-    r.toggleStrong = markItem(type, {
+export function buildMessageEditorMenu(schema) {
+  let r = {
+    toggleStrong: markItem(schema.marks.strong, {
       title: 'Toggle strong style',
-      icon: icons.strong,
-    });
-  if ((type = schema.marks.em))
-    r.toggleEm = markItem(type, { title: 'Toggle emphasis', icon: icons.em });
-  if ((type = schema.marks.code))
-    r.toggleCode = markItem(type, {
+      icon: BoldIcon,
+    }),
+    toggleEm: markItem(schema.marks.em, {
+      title: 'Toggle emphasis',
+      icon: ItalicsIcon,
+    }),
+    toggleCode: markItem(schema.marks.code, {
       title: 'Toggle code font',
-      icon: icons.code,
-    });
-  if ((type = schema.marks.link)) r.toggleLink = linkItem(type);
-
-  if ((type = schema.nodes.bullet_list))
-    r.wrapBulletList = wrapListItem(type, {
+      icon: CodeIcon,
+    }),
+    toggleLink: linkItem(schema.marks.link),
+    wrapBulletList: wrapListItem(schema.nodes.bullet_list, {
       title: 'Wrap in bullet list',
-      icon: icons.bulletList,
-    });
-  if ((type = schema.nodes.ordered_list))
-    r.wrapOrderedList = wrapListItem(type, {
+      icon: BulletListIcon,
+    }),
+    wrapOrderedList: wrapListItem(schema.nodes.ordered_list, {
       title: 'Wrap in ordered list',
-      icon: icons.orderedList,
-    });
+      icon: TextNumberListIcon,
+    }),
+    undoItem: new MenuItem({
+      title: 'Undo last change',
+      run: undo,
+      enable: state => undo(state),
+      icon: UndoIcon,
+    }),
+    redoItem: new MenuItem({
+      title: 'Redo last undone change',
+      run: redo,
+      enable: state => redo(state),
+      icon: RedoIcon,
+    }),
+  };
 
   let cut = arr => arr.filter(x => x);
 
@@ -115,7 +130,7 @@ export function buildMenuItems(schema) {
     cut([r.toggleStrong, r.toggleEm, r.toggleCode, r.toggleLink]),
   ];
   r.blockMenu = [cut([r.wrapBulletList, r.wrapOrderedList])];
-  r.fullMenu = r.inlineMenu.concat([[undoItem, redoItem]], r.blockMenu);
+  r.fullMenu = r.inlineMenu.concat([[r.undoItem, r.redoItem]], r.blockMenu);
 
   return r;
 }

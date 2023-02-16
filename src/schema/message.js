@@ -1,0 +1,69 @@
+import { orderedList, bulletList, listItem } from 'prosemirror-schema-list';
+import { schema } from 'prosemirror-markdown';
+
+import { Schema } from 'prosemirror-model';
+
+export const messageSchema = new Schema({
+  nodes: {
+    doc: schema.spec.nodes.get('doc'),
+    paragraph: schema.spec.nodes.get('paragraph'),
+    blockquote: schema.spec.nodes.get('blockquote'),
+    code_block: schema.spec.nodes.get('code_block'),
+    text: schema.spec.nodes.get('text'),
+    hard_break: schema.spec.nodes.get('hard_break'),
+    ordered_list: Object.assign(orderedList, {
+      content: 'list_item+',
+      group: 'block',
+    }),
+    bullet_list: Object.assign(bulletList, {
+      content: 'list_item+',
+      group: 'block',
+    }),
+    list_item: Object.assign(listItem, { content: 'paragraph block*' }),
+    mention: {
+      attrs: { userFullName: { default: '' }, userId: { default: '' } },
+      group: 'inline',
+      inline: true,
+      selectable: true,
+      draggable: true,
+      atom: true,
+      toDOM: node => [
+        'span',
+        {
+          class: 'prosemirror-mention-node',
+          'mention-user-id': node.attrs.userId,
+          'mention-user-full-name': node.attrs.userFullName,
+        },
+        `@${node.attrs.userFullName}`,
+      ],
+      parseDOM: [
+        {
+          tag: 'span[mention-user-id][mention-user-full-name]',
+          getAttrs: dom => {
+            const userId = dom.getAttribute('mention-user-id');
+            const userFullName = dom.getAttribute('mention-user-full-name');
+            return { userId, userFullName };
+          },
+        },
+      ],
+    },
+  },
+  marks: {
+    link: schema.spec.marks.get('link'),
+    em: schema.spec.marks.get('em'),
+    strong: schema.spec.marks.get('strong'),
+    code: schema.spec.marks.get('code'),
+    strike: {
+      parseDOM: [
+        { tag: 's' },
+        { tag: 'del' },
+        { tag: 'strike' },
+        {
+          style: 'text-decoration',
+          getAttrs: value => value === 'line-through',
+        },
+      ],
+      toDOM: () => ['s', 0],
+    },
+  },
+});

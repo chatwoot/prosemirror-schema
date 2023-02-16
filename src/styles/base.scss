@@ -1,21 +1,17 @@
-.ProseMirror {
-    position: relative;
-}
+@use '_variables.scss';
+
 
 .ProseMirror {
+    padding: var(--space-smaller);
+    line-height: 1.4;
+    outline: none;
+    position: relative;
     word-wrap: break-word;
     white-space: pre-wrap;
     -webkit-font-variant-ligatures: none;
     font-variant-ligatures: none;
 }
 
-.ProseMirror pre {
-    white-space: pre-wrap;
-}
-
-.ProseMirror li {
-    position: relative;
-}
 
 .ProseMirror-hideselection *::selection {
     background: transparent;
@@ -65,18 +61,13 @@ li.ProseMirror-selectednode:after {
 }
 
 .ProseMirror-menuitem {
-    margin-right: 3px;
+    margin-right: var(--space-small);
     display: inline-block;
 }
 
 .ProseMirror-menu-active {
-    background: #eee;
-    border-radius: 4px;
-}
-
-.ProseMirror-menu-active {
-    background: #eee;
-    border-radius: 4px;
+    background: var(--s-75);
+    border-radius: var(--border-radius-small);
 }
 
 .ProseMirror-menu-disabled {
@@ -85,13 +76,12 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror-menubar {
     position: relative;
-    min-height: var(--space-two);
-    color: var(--color-heading);
+    min-height: var(--space-medium);
+    color: var(--s-700);
     padding: var(--space-small) 0;
     top: 0;
-    left: var(--space-minus-small);
     right: 0;
-    background: transparent;
+    background: white;
     z-index: 10;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
@@ -102,9 +92,9 @@ li.ProseMirror-selectednode:after {
     display: inline-block;
     line-height: 0.8;
     vertical-align: -2px;
-    /* Compensate for padding */
-    padding: 2px 8px;
+    padding: var(--space-small);
     cursor: pointer;
+    box-sizing: content-box;
 }
 
 .ProseMirror-menu-disabled.ProseMirror-icon {
@@ -113,7 +103,8 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror-icon svg {
     fill: currentColor;
-    height: 2em;
+    width: var(--space-slab) !important;
+    height: var(--space-slab);
 }
 
 .ProseMirror-icon span {
@@ -144,18 +135,6 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror-focused .ProseMirror-gapcursor {
     display: block;
-}
-
-.ProseMirror ul,
-.ProseMirror ol {
-    padding-left: 16px;
-}
-
-.ProseMirror blockquote {
-    padding-left: 1em;
-    border-left: 3px solid #eee;
-    margin-left: 0;
-    margin-right: 0;
 }
 
 .ProseMirror-prompt {
@@ -215,37 +194,91 @@ li.ProseMirror-selectednode:after {
     margin-bottom: 23px;
 }
 
-.ProseMirror p:first-child,
-.ProseMirror h1:first-child,
-.ProseMirror h2:first-child,
-.ProseMirror h3:first-child,
-.ProseMirror h4:first-child,
-.ProseMirror h5:first-child,
-.ProseMirror h6:first-child {
-    margin-top: 10px;
-}
-
 .ProseMirror {
-    padding: 4px 8px 4px 14px;
-    line-height: 1.2;
-    outline: none;
-}
 
-.ProseMirror p {
-    margin-bottom: 8px;
-}
+    ul,
+    ol {
+        padding-left: var(--space-normal);
+        margin-left: 0;
+    }
 
-.ProseMirror .empty-node::before {
-    position: absolute;
-    color: #aaa;
-    cursor: text;
-}
+    li {
+        position: relative;
+        padding-left: var(--space-smaller);
+    }
 
-.ProseMirror .empty-node:hover::before {
-    color: #777;
-}
 
-.ProseMirror p.empty-node:first-child::before {
-    content: attr(data-placeholder);
-    cursor: text;
+    blockquote {
+        padding-left: var(--space-small);
+        padding-top: 0;
+        border-left: var(--space-smaller) solid var(--s-200);
+        margin: var(--space-normal) 0;
+    }
+
+    blockquote p {
+        color: var(--s-600);
+    }
+
+    pre {
+        white-space: pre-wrap;
+        background: var(--s-900);
+        border-radius: var(--border-radius-medium);
+        padding: var(--space-small);
+        margin-bottom: var(--space-small);
+    }
+
+    strong code,
+    p code {
+        background: var(--s-75);
+        font-family: "ui-monospace",
+            "SFMono-Regular",
+            "Menlo",
+            "Monaco",
+            "Consolas",
+            '"Liberation Mono"',
+            '"Courier New"',
+            "monospace";
+        border-radius: var(--border-radius-small);
+        padding: var(--space-smaller);
+        color: var(--s-800);
+    }
+
+    pre code {
+        background: transparent;
+        color: #fff;
+        padding: 0;
+    }
+
+    p:first-child,
+    h1:first-child,
+    h2:first-child,
+    h3:first-child,
+    h4:first-child,
+    h5:first-child,
+    h6:first-child {
+        margin-top: 10px;
+    }
+
+    p {
+        margin-bottom: var(--space-small);
+    }
+
+    li::marker {
+        font-size: var(--font-size-small);
+    }
+
+    .empty-node::before {
+        position: absolute;
+        color: #aaa;
+        cursor: text;
+    }
+
+    .empty-node:hover::before {
+        color: #777;
+    }
+
+    p.empty-node:first-child::before {
+        content: attr(data-placeholder);
+        cursor: text;
+    }
 }
