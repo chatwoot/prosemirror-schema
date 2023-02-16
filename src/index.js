@@ -41,7 +41,8 @@ export function wootArticleWriterSetup(props) {
     Placeholder(props.placeholder),
     menuBar({
       floating: true,
-      content: buildArticleEditorMenu(props.schema).fullMenu,
+      content: buildArticleEditorMenu(props.schema, props.onImageUpload)
+        .fullMenu,
     }),
     new Plugin({
       props: {
