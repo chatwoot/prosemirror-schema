@@ -77,7 +77,12 @@ export function baseKeyMaps(schema) {
   if (schema.nodes.hard_break) {
     let br = schema.nodes.hard_break,
       cmd = chainCommands(exitCode, (state, dispatch) => {
-        dispatch(state.tr.replaceSelectionWith(br.create()).scrollIntoView());
+        dispatch(
+          state.tr
+            .insertText(` `)
+            .replaceSelectionWith(br.create())
+            .scrollIntoView()
+        );
         return true;
       });
     bind('Mod-Enter', cmd);
