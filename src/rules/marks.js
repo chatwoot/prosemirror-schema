@@ -1,13 +1,15 @@
-import { inputRules } from 'prosemirror-inputrules';
+import { inputRules, InputRule } from 'prosemirror-inputrules';
 import { applyMarkOnRange } from '../commands';
 import { createInputRule } from '../utils';
+import { TextSelection } from 'prosemirror-state';
 
 const validCombos = {
-  '**': ['_', '~~'],
-  '*': ['__', '~~'],
-  __: ['*', '~~'],
-  _: ['**', '~~'],
-  '~~': ['__', '_', '**', '*'],
+  '**': ['_', '~~', '^'],
+  '*': ['__', '~~', '^'],
+  '^': ['*', '_'],
+  __: ['*', '~~', '^'],
+  _: ['**', '~~', '^'],
+  '~~': ['__', '_', '**', '*', '^'],
 };
 
 const validRegex = (char, str) => {
@@ -147,6 +149,7 @@ export const italicRegex2 =
 export const strikeRegex =
   /(\S*)(\~\~([^\s\~](\~(?!\~)|[^\~])*[^\s\~]|[^\s\~])\~\~)$/;
 export const codeRegex = /(\S*)(`[^\s][^`]*`)$/;
+export const supertextRegex = /(\S*[^\s^]*)(\^([^\s^][^^]*[^\s^]|[^\s^])\^)$/;
 
 /**
  * Create input rules for strong mark
@@ -210,6 +213,17 @@ function getStrikeInputRules(schema) {
   return [doubleTildeRule];
 }
 
+function getSuperscriptInputRules(schema) {
+  const markLength = 1;
+  // const doubleTildeRule = addMark(schema.marks.superscript);
+  const doubleTildeRule = createInputRule(
+    supertextRegex,
+    addMark(schema.marks.superscript, schema, markLength, '^')
+  );
+
+  return [doubleTildeRule];
+}
+
 /**
  * Create input rules for code mark
  *
@@ -234,6 +248,10 @@ export function textFormattingInputRules(schema) {
 
   if (schema.marks.em) {
     rules.push(...getItalicInputRules(schema));
+  }
+
+  if (schema.marks.superscript) {
+    rules.push(...getSuperscriptInputRules(schema));
   }
 
   if (schema.marks.strike) {

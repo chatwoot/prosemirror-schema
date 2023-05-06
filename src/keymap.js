@@ -111,6 +111,31 @@ export function baseKeyMaps(schema) {
     bind('Tab', indentList());
     bind('Shift-Tab', outdentList());
   }
+
+  if (schema.marks.superscript) {
+    bind('Space', (state, dispatch) => {
+      // debugger;
+      // Escape out of super script on entering space
+      // const { $cursor } = state.selection;
+      // if (
+      //   $cursor &&
+      //   $cursor.nodeBefore &&
+      //   $cursor.nodeBefore.type.name === 'text'
+      // ) {
+      //   const textBefore = $cursor.nodeBefore.text;
+      //   if (textBefore.endsWith('^')) {
+      //     const marksToRemove = state.doc.resolve($cursor.pos - 1).marks();
+      //     const tr = state.tr;
+      //     marksToRemove.forEach(mark => {
+      //       tr.removeMark($cursor.pos - 1, $cursor.pos, mark);
+      //     });
+      //     if (dispatch) dispatch(tr);
+      //     return true;
+      //   }
+      // }
+      // return false;
+    });
+  }
   bind('Enter', chainCommands.apply(null, enterCommands));
   bind(modEnter, chainCommands.apply(null, enterCommands));
   return keymap(keys);

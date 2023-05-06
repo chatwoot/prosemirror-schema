@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it';
+import MarkdownItSup from 'markdown-it-sup';
 import { MarkdownParser } from 'prosemirror-markdown';
 import {
   baseSchemaToMdMapping,
@@ -42,10 +43,11 @@ export const articleMdToPmMapping = {
   },
 };
 
-const md = MarkdownIt('zero', {
+const md = MarkdownIt('commonmark', {
   html: false,
   linkify: true,
-});
+  breaks: true,
+}).use(MarkdownItSup);
 
 md.enable([
   // Process html entity - &#123;, &#xAF;, &quot;, ...

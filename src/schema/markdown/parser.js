@@ -20,6 +20,7 @@ export const baseSchemaToMdMapping = {
   },
   marks: {
     em: 'emphasis',
+    superscript: 'text',
     strong: 'text',
     link: ['link', 'autolink', 'reference', 'linkify'],
     strike: 'strikethrough',
@@ -48,6 +49,7 @@ export const baseNodesMdToPmMapping = {
 
 export const baseMarksMdToPmMapping = {
   em: { mark: 'em' },
+  sup: { mark: 'superscript' },
   strong: { mark: 'strong' },
   link: {
     mark: 'link',
