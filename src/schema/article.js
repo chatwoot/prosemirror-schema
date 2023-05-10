@@ -29,7 +29,7 @@ export const fullSchema = new Schema({
     superscript: {
       parseDOM: [{ tag: 'sup' }],
       toDOM() {
-        return ['sup', 0];
+        return ['sup'];
       },
     },
     strong: schema.spec.marks.get('strong'),

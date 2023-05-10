@@ -10,6 +10,7 @@ import { markActive } from '../utils';
 import {
   BoldIcon,
   ItalicsIcon,
+  SuperscriptIcon,
   CodeIcon,
   UndoIcon,
   RedoIcon,
@@ -179,6 +180,10 @@ export function buildArticleEditorMenu(schema, onFileUpload) {
       title: 'Toggle emphasis',
       icon: ItalicsIcon,
     }),
+    toggleSuper: markItem(schema.marks.superscript, {
+      title: 'Toggle Superscript',
+      icon: SuperscriptIcon,
+    }),
     toggleCode: markItem(schema.marks.code, {
       title: 'Toggle code font',
       icon: CodeIcon,
@@ -225,7 +230,13 @@ export function buildArticleEditorMenu(schema, onFileUpload) {
   let cut = arr => arr.filter(x => x);
 
   r.inlineMenu = [
-    cut([r.toggleStrong, r.toggleEm, r.toggleCode, r.toggleLink]),
+    cut([
+      r.toggleStrong,
+      r.toggleEm,
+      r.toggleCode,
+      r.toggleLink,
+      r.toggleSuper,
+    ]),
   ];
   r.blockMenu = [
     cut([

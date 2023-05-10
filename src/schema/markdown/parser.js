@@ -20,7 +20,7 @@ export const baseSchemaToMdMapping = {
   },
   marks: {
     em: 'emphasis',
-    superscript: 'text',
+    superscript: 'sup',
     strong: 'text',
     link: ['link', 'autolink', 'reference', 'linkify'],
     strike: 'strikethrough',
