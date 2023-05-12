@@ -171,7 +171,11 @@ export const moveLeft = () => {
 
 export const insertBlock = (state, nodeType, nodeName, start, end, attrs) => {
   // To ensure that match is done after HardBreak.
-  const { hardBreak, codeBlock, listItem } = state.schema.nodes;
+  const {
+    hard_break: hardBreak,
+    code_block: codeBlock,
+    list_item: listItem,
+  } = state.schema.nodes;
   const $pos = state.doc.resolve(start);
   if ($pos.nodeAfter.type !== hardBreak) {
     return null;
