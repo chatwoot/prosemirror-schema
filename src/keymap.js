@@ -74,6 +74,10 @@ export function baseKeyMaps(schema) {
     bind('Mod-I', toggleMark(schema.marks.em));
   }
 
+  if (schema.marks.superscript) {
+    bind('Shift-Mod-.', toggleMark(schema.marks.superscript));
+  }
+
   if (schema.nodes.hard_break) {
     let br = schema.nodes.hard_break,
       cmd = chainCommands(exitCode, (state, dispatch) => {
@@ -111,6 +115,7 @@ export function baseKeyMaps(schema) {
     bind('Tab', indentList());
     bind('Shift-Tab', outdentList());
   }
+
   bind('Enter', chainCommands.apply(null, enterCommands));
   bind(modEnter, chainCommands.apply(null, enterCommands));
   return keymap(keys);

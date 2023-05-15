@@ -74,6 +74,13 @@ export const em = {
   mixable: true,
   expelEnclosingWhitespace: true,
 };
+export const superscript = {
+  open: '^',
+  close: '^',
+  mixable: false,
+  escape: false,
+  expelEnclosingWhitespace: false,
+};
 export const strike = {
   open: '~~',
   close: '~~',

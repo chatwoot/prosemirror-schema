@@ -26,6 +26,12 @@ export const fullSchema = new Schema({
   marks: {
     link: schema.spec.marks.get('link'),
     em: schema.spec.marks.get('em'),
+    superscript: {
+      parseDOM: [{ tag: 'sup' }],
+      toDOM() {
+        return ['sup'];
+      },
+    },
     strong: schema.spec.marks.get('strong'),
     code: schema.spec.marks.get('code'),
     strike: {

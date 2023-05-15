@@ -13,6 +13,7 @@ import {
   hard_break,
   text,
   em,
+  superscript,
   strike,
   strong,
   link,
@@ -35,6 +36,7 @@ export const ArticleMarkdownSerializer = new MarkdownSerializerBase(
   },
   {
     em,
+    superscript,
     strike,
     strong,
     link,
