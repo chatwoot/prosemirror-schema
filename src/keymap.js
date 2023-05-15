@@ -75,8 +75,7 @@ export function baseKeyMaps(schema) {
   }
 
   if (schema.marks.superscript) {
-    bind('Mod-s', toggleMark(schema.marks.superscript));
-    bind('Mod-S', toggleMark(schema.marks.superscript));
+    bind('Shift-Mod-.', toggleMark(schema.marks.superscript));
   }
 
   if (schema.nodes.hard_break) {
