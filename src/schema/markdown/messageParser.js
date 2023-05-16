@@ -24,7 +24,7 @@ export const messageMdToPmMapping = {
   },
 };
 
-const md = MarkdownIt('zero', {
+const md = MarkdownIt('commonmark', {
   html: false,
   linkify: false,
 });

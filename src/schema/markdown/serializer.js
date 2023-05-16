@@ -105,6 +105,7 @@ export const link = {
           (mark.attrs.title ? ' ' + state.quote(mark.attrs.title) : '') +
           ')';
   },
+  escape: false,
 };
 export const code = {
   open(_state, _mark, parent, index) {
