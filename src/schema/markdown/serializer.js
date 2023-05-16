@@ -65,7 +65,7 @@ export const hard_break = (state, node, parent, index) => {
     }
 };
 export const text = (state, node) => {
-  state.text(node.text);
+  state.text(node.text, false);
 };
 
 export const em = {
