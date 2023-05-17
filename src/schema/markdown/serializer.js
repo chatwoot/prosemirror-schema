@@ -60,12 +60,12 @@ export const image = (state, node) => {
 export const hard_break = (state, node, parent, index) => {
   for (let i = index + 1; i < parent.childCount; i++)
     if (parent.child(i).type !== node.type) {
-      state.write('\\\n');
+      state.write('  ');
       return;
     }
 };
 export const text = (state, node) => {
-  state.text(node.text);
+  state.text(node.text, false);
 };
 
 export const em = {
@@ -105,6 +105,7 @@ export const link = {
           (mark.attrs.title ? ' ' + state.quote(mark.attrs.title) : '') +
           ')';
   },
+  escape: false,
 };
 export const code = {
   open(_state, _mark, parent, index) {
