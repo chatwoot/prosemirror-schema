@@ -3,6 +3,7 @@ import { Plugin } from 'prosemirror-state';
 import { dropCursor } from 'prosemirror-dropcursor';
 import { gapCursor } from 'prosemirror-gapcursor';
 import { menuBar } from 'prosemirror-menu';
+import { paste } from 'prosemirror-paste-rules';
 
 import Placeholder from './Placeholder';
 

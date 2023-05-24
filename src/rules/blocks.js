@@ -2,6 +2,7 @@ import {
   textblockTypeInputRule,
   wrappingInputRule,
   inputRules,
+  InputRule,
 } from 'prosemirror-inputrules';
 
 import { leafNodeReplacementCharacter } from '../utils';
@@ -152,6 +153,32 @@ function getCodeBlockRules(schema) {
   return [threeTildeRule, leftNodeReplacementThreeTildeRule];
 }
 
+function createEmbedInputRule(schema) {
+  // Create the input rule for YouTube links
+  const youtubeEmbedInputRule = new InputRule(
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+    (state, match, start, end) => {
+      const [fullMatch, videoId] = match;
+      const url = `https://www.youtube.com/embed/${videoId}`;
+      debugger;
+
+      const { tr } = state;
+      if (tr.selection.$from.pos !== tr.selection.$to.pos) {
+        tr.delete(tr.selection.$from.pos, tr.selection.$to.pos);
+      }
+      tr.replaceRangeWith(
+        start - 1,
+        end,
+        state.schema.nodes.youtubeEmbed.create({ url })
+      );
+
+      return tr;
+    }
+  );
+
+  return [youtubeEmbedInputRule];
+}
+
 export function blocksInputRule(schema) {
   const rules = [];
 
@@ -165,6 +192,10 @@ export function blocksInputRule(schema) {
 
   if (schema.nodes.code_block) {
     rules.push(...getCodeBlockRules(schema));
+  }
+
+  if (schema.nodes.youtubeEmbed) {
+    rules.push(...createEmbedInputRule(schema));
   }
 
   if (rules.length !== 0) {
