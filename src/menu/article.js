@@ -230,13 +230,7 @@ export function buildArticleEditorMenu(schema, onFileUpload) {
   let cut = arr => arr.filter(x => x);
 
   r.inlineMenu = [
-    cut([
-      r.toggleStrong,
-      r.toggleEm,
-      r.toggleCode,
-      r.toggleLink,
-      r.toggleSuper,
-    ]),
+    cut([r.toggleStrong, r.toggleEm, r.toggleCode, r.toggleLink]),
   ];
   r.blockMenu = [
     cut([
