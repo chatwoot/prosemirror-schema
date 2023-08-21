@@ -87,7 +87,7 @@ function wrapListItem(nodeType, options) {
   return cmdItem(wrapInList(nodeType, options.attrs), options);
 }
 
-export function buildMessageEditorMenu(schema) {
+export function buildMessageEditorMenu(schema, customMenuList) {
   let r = {
     toggleStrong: markItem(schema.marks.strong, {
       title: 'Toggle strong style',
@@ -102,11 +102,11 @@ export function buildMessageEditorMenu(schema) {
       icon: CodeIcon,
     }),
     toggleLink: linkItem(schema.marks.link),
-    wrapBulletList: wrapListItem(schema.nodes.bullet_list, {
+    toggleBulletList: wrapListItem(schema.nodes.bullet_list, {
       title: 'Wrap in bullet list',
       icon: BulletListIcon,
     }),
-    wrapOrderedList: wrapListItem(schema.nodes.ordered_list, {
+    toggleOrderedList: wrapListItem(schema.nodes.ordered_list, {
       title: 'Wrap in ordered list',
       icon: TextNumberListIcon,
     }),
@@ -129,8 +129,9 @@ export function buildMessageEditorMenu(schema) {
   r.inlineMenu = [
     cut([r.toggleStrong, r.toggleEm, r.toggleCode, r.toggleLink]),
   ];
-  r.blockMenu = [cut([r.wrapBulletList, r.wrapOrderedList])];
-  r.fullMenu = r.inlineMenu.concat([[r.undoItem, r.redoItem]], r.blockMenu);
+  r.blockMenu = [cut([r.toggleBulletList, r.toggleOrderedList])];
+  r.fullMenu = [...r.inlineMenu, [r.undoItem, r.redoItem], ...r.blockMenu];
+  r.customMenu = [customMenuList.map(item => r[item])];
 
-  return r;
+  return customMenuList.length ? r.customMenu : r.fullMenu;
 }

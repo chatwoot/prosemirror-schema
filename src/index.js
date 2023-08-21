@@ -69,7 +69,7 @@ export function wootMessageWriterSetup(props) {
     Placeholder(props.placeholder),
     menuBar({
       floating: true,
-      content: buildMessageEditorMenu(props.schema).fullMenu,
+      content: buildMessageEditorMenu(props.schema, props.customMenuList),
     }),
     new Plugin({
       props: {
