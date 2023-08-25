@@ -5,9 +5,6 @@ import { gapCursor } from 'prosemirror-gapcursor';
 import { menuBar } from 'prosemirror-menu';
 
 import Placeholder from './Placeholder';
-
-export { EditorState, Selection } from 'prosemirror-state';
-export { EditorView } from 'prosemirror-view';
 import {
   listInputRules,
   linksInputRules,
@@ -15,9 +12,10 @@ import {
   baseKeyMaps,
   textFormattingInputRules,
 } from './rules';
+import buildMenuOptions from './menu/menuOptions';
 
-import { buildArticleEditorMenu } from './menu/article';
-import { buildMessageEditorMenu } from './menu/message';
+export { EditorState, Selection } from 'prosemirror-state';
+export { EditorView } from 'prosemirror-view';
 
 export { MessageMarkdownTransformer } from './schema/markdown/messageParser';
 export { ArticleMarkdownTransformer } from './schema/markdown/articleParser';
@@ -28,55 +26,35 @@ export { MessageMarkdownSerializer } from './schema/markdown/messageSerializer';
 export { fullSchema } from './schema/article';
 export { messageSchema } from './schema/message';
 
-export function wootArticleWriterSetup(props) {
-  let plugins = [
-    history(),
-    baseKeyMaps(props.schema),
-    blocksInputRule(props.schema),
-    textFormattingInputRules(props.schema),
-    linksInputRules(props.schema),
-    listInputRules(props.schema),
-    dropCursor(),
-    gapCursor(),
-    Placeholder(props.placeholder),
-    menuBar({
-      floating: true,
-      content: buildArticleEditorMenu(props.schema, props.onImageUpload)
-        .fullMenu,
+export const buildEditor = ({
+  schema,
+  placeholder,
+  methods: {
+    onImageUpload,
+  } = {},
+  plugins = [],
+  enabledMenuOptions,
+}) => [
+  history(),
+  baseKeyMaps(schema),
+  blocksInputRule(schema),
+  textFormattingInputRules(schema),
+  linksInputRules(schema),
+  listInputRules(schema),
+  dropCursor(),
+  gapCursor(),
+  Placeholder(placeholder),
+  menuBar({
+    floating: true,
+    content: buildMenuOptions(schema, {
+      enabledMenuOptions,
+      onImageUpload,
     }),
-    new Plugin({
-      props: {
-        attributes: { class: 'ProseMirror-woot-style' },
-      },
-    }),
-    ...(props.plugins || []),
-  ];
-
-  return plugins;
-}
-
-export function wootMessageWriterSetup(props) {
-  let plugins = [
-    ...(props.plugins || []),
-    history(),
-    baseKeyMaps(props.schema),
-    blocksInputRule(props.schema),
-    textFormattingInputRules(props.schema),
-    linksInputRules(props.schema),
-    listInputRules(props.schema),
-    dropCursor(),
-    gapCursor(),
-    Placeholder(props.placeholder),
-    menuBar({
-      floating: true,
-      content: buildMessageEditorMenu(props.schema, props.customMenuList),
-    }),
-    new Plugin({
-      props: {
-        attributes: { class: 'ProseMirror-woot-style' },
-      },
-    }),
-  ];
-
-  return plugins;
-}
+  }),
+  new Plugin({
+    props: {
+      attributes: { class: 'ProseMirror-woot-style' },
+    },
+  }),
+  ...(plugins || []),
+];
