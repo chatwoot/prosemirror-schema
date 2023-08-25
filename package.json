@@ -4,12 +4,10 @@
   "description": "Schema setup for using prosemirror in chatwoot. Based on 👉 https://github.com/ProseMirror/prosemirror-example-setup/",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/chatwoot/prosemirror-schema.git"
-  },
+  "repository": "git+https://github.com/chatwoot/prosemirror-schema.git",
   "files": [
     "src/*"
   ],
@@ -38,5 +36,16 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/@chatwoot"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0 || ^8.2.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.2",
+    "husky": "^8.0.0",
+    "lint-staged": "^14.0.1"
+  },
+  "lint-staged": {
+    "*.js": "eslint --fix"
   }
 }

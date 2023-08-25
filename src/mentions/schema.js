@@ -16,18 +16,19 @@ const mentionParser = () => ({
 
 const markdownSerializer = () => (state, node) => {
   const uri = state.esc(
-    `mention://user/${node.attrs.userId}/${encodeURIComponent(node.attrs.userFullName)}`
+    `mention://user/${node.attrs.userId}/${encodeURIComponent(
+      node.attrs.userFullName,
+    )}`,
   );
-  const escapedDisplayName = state.esc('@' + (node.attrs.userFullName || ''));
+  const escapedDisplayName = state.esc(`@${node.attrs.userFullName || ''}`);
 
   state.write(`[${escapedDisplayName}](${uri})`);
 };
 
-export const addMentionsToMarkdownSerializer = serializer =>
-  new MarkdownSerializer(
-    { mention: markdownSerializer(), ...serializer.nodes },
-    serializer.marks
-  );
+export const addMentionsToMarkdownSerializer = (serializer) => new MarkdownSerializer(
+  { mention: markdownSerializer(), ...serializer.nodes },
+  serializer.marks,
+);
 
 const mentionNode = {
   attrs: { userFullName: { default: '' }, userId: { default: '' } },
@@ -36,7 +37,7 @@ const mentionNode = {
   selectable: true,
   draggable: true,
   atom: true,
-  toDOM: node => [
+  toDOM: (node) => [
     'span',
     {
       class: 'prosemirror-mention-node',
@@ -48,7 +49,7 @@ const mentionNode = {
   parseDOM: [
     {
       tag: 'span[mention-user-id][mention-user-full-name]',
-      getAttrs: dom => {
+      getAttrs: (dom) => {
         const userId = dom.getAttribute('mention-user-id');
         const userFullName = dom.getAttribute('mention-user-full-name');
         return { userId, userFullName };
@@ -57,16 +58,14 @@ const mentionNode = {
   ],
 };
 
-const addMentionNodes = nodes => nodes.append({ mention: mentionNode });
+const addMentionNodes = (nodes) => nodes.append({ mention: mentionNode });
 
 export const schemaWithMentions = new Schema({
   nodes: addMentionNodes(schema.spec.nodes),
   marks: schema.spec.marks,
 });
 
-export const addMentionsToMarkdownParser = parser => {
-  return new MarkdownParser(schemaWithMentions, parser.tokenizer, {
-    ...parser.tokens,
-    mention: mentionParser(),
-  });
-};
+export const addMentionsToMarkdownParser = (parser) => new MarkdownParser(schemaWithMentions, parser.tokenizer, {
+  ...parser.tokens,
+  mention: mentionParser(),
+});
