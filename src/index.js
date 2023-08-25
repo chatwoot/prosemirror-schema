@@ -1,37 +1,35 @@
-import { history } from 'prosemirror-history';
-import { Plugin } from 'prosemirror-state';
-import { dropCursor } from 'prosemirror-dropcursor';
-import { gapCursor } from 'prosemirror-gapcursor';
-import { menuBar } from 'prosemirror-menu';
+import { history } from "prosemirror-history";
+import { Plugin } from "prosemirror-state";
+import { dropCursor } from "prosemirror-dropcursor";
+import { gapCursor } from "prosemirror-gapcursor";
+import { menuBar } from "prosemirror-menu";
 
-import Placeholder from './Placeholder';
+import Placeholder from "./Placeholder";
 import {
   listInputRules,
   linksInputRules,
   blocksInputRule,
   baseKeyMaps,
   textFormattingInputRules,
-} from './rules';
-import buildMenuOptions from './menu/menuOptions';
+} from "./rules";
+import buildMenuOptions from "./menu/menuOptions";
 
-export { EditorState, Selection } from 'prosemirror-state';
-export { EditorView } from 'prosemirror-view';
+export { EditorState, Selection } from "prosemirror-state";
+export { EditorView } from "prosemirror-view";
 
-export { MessageMarkdownTransformer } from './schema/markdown/messageParser';
-export { ArticleMarkdownTransformer } from './schema/markdown/articleParser';
+export { MessageMarkdownTransformer } from "./schema/markdown/messageParser";
+export { ArticleMarkdownTransformer } from "./schema/markdown/articleParser";
 
-export { ArticleMarkdownSerializer } from './schema/markdown/articleSerializer';
-export { MessageMarkdownSerializer } from './schema/markdown/messageSerializer';
+export { ArticleMarkdownSerializer } from "./schema/markdown/articleSerializer";
+export { MessageMarkdownSerializer } from "./schema/markdown/messageSerializer";
 
-export { fullSchema } from './schema/article';
-export { messageSchema } from './schema/message';
+export { fullSchema } from "./schema/article";
+export { messageSchema } from "./schema/message";
 
 export const buildEditor = ({
   schema,
   placeholder,
-  methods: {
-    onImageUpload,
-  } = {},
+  methods: { onImageUpload } = {},
   plugins = [],
   enabledMenuOptions,
 }) => [
@@ -53,7 +51,7 @@ export const buildEditor = ({
   }),
   new Plugin({
     props: {
-      attributes: { class: 'ProseMirror-woot-style' },
+      attributes: { class: "ProseMirror-woot-style" },
     },
   }),
   ...(plugins || []),
