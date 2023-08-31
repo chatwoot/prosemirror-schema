@@ -33,6 +33,7 @@ export const buildEditor = ({
   plugins = [],
   enabledMenuOptions,
 }) => [
+  ...(plugins || []),
   history(),
   baseKeyMaps(schema),
   blocksInputRule(schema),
@@ -54,5 +55,4 @@ export const buildEditor = ({
       attributes: { class: "ProseMirror-woot-style" },
     },
   }),
-  ...(plugins || []),
 ];
