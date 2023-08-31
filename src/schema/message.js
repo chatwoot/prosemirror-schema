@@ -2,7 +2,7 @@ import { orderedList, bulletList, listItem } from 'prosemirror-schema-list';
 import { schema } from 'prosemirror-markdown';
 
 import { Schema } from 'prosemirror-model';
- 
+
 export const messageSchema = new Schema({
   nodes: {
     doc: schema.spec.nodes.get('doc'),
