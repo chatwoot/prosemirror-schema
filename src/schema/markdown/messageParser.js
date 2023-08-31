@@ -15,6 +15,20 @@ export const messageSchemaToMdMapping = {
 export const messageMdToPmMapping = {
   ...baseNodesMdToPmMapping,
   ...baseMarksMdToPmMapping,
+    image: {
+    node: 'image',
+    getAttrs: (tok) => ({
+      src: tok.attrGet('src'),
+      title: tok.attrGet('title') || null,
+      alt: (tok.children[0] && tok.children[0].content) || null,
+    }),
+  },
+  image_paragraph: {
+    node: 'image_paragraph',
+    getAttrs: (tok) => ({
+      class: tok.attrGet('class'),
+    }),
+  },
   mention: {
     node: 'mention',
     getAttrs: ({ mention }) => {

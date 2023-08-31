@@ -117,6 +117,22 @@ export const code = {
   escape: false,
 };
 
+export const image_paragraph = (state, node) => {
+  // Render each image within the paragraph
+  node.forEach((child) => {
+    if (child.type.name === 'image') {
+      state.write(
+        '![' +
+          state.esc(child.attrs.alt || '') +
+          '](' +
+          state.esc(child.attrs.src) +
+          (child.attrs.title ? ' ' + state.quote(child.attrs.title) : '') +
+          ')'
+      );
+    }
+  });
+};
+
 function backticksFor(node, side) {
   let ticks = /`+/g,
     m,

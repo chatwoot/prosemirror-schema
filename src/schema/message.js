@@ -3,6 +3,29 @@ import { schema } from 'prosemirror-markdown';
 
 import { Schema } from 'prosemirror-model';
 
+const customImageParagraphSpec = Object.assign(
+  {},
+  schema.spec.nodes.get("paragraph"),
+  {
+    attrs: {
+      class: { default: null },
+    },
+    toDOM: (node) => [
+      "p",
+      node.attrs.class ? { class: node.attrs.class } : {},
+      0,
+    ],
+    parseDOM: [
+      {
+        tag: "p",
+        getAttrs: (dom) => ({
+          class: dom.getAttribute("class"),
+        }),
+      },
+    ],
+  }
+);
+ 
 export const messageSchema = new Schema({
   nodes: {
     doc: schema.spec.nodes.get('doc'),
@@ -11,6 +34,8 @@ export const messageSchema = new Schema({
     code_block: schema.spec.nodes.get('code_block'),
     text: schema.spec.nodes.get('text'),
     hard_break: schema.spec.nodes.get('hard_break'),
+    image_paragraph: customImageParagraphSpec,
+    image: schema.spec.nodes.get('image'),
     ordered_list: Object.assign(orderedList, {
       content: 'list_item+',
       group: 'block',
