@@ -26,14 +26,6 @@ export const articleMdToPmMapping = {
     block: 'heading',
     attrs: tok => ({ level: +tok.tag.slice(1) }),
   },
-  image: {
-    node: 'image',
-    getAttrs: tok => ({
-      src: tok.attrGet('src'),
-      title: tok.attrGet('title') || null,
-      alt: (tok.children[0] && tok.children[0].content) || null,
-    }),
-  },
   mention: {
     node: 'mention',
     getAttrs: ({ mention }) => {

@@ -11,6 +11,7 @@ export const messageSchema = new Schema({
     code_block: schema.spec.nodes.get('code_block'),
     text: schema.spec.nodes.get('text'),
     hard_break: schema.spec.nodes.get('hard_break'),
+    image: schema.spec.nodes.get('image'),
     ordered_list: Object.assign(orderedList, {
       content: 'list_item+',
       group: 'block',
