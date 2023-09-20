@@ -1,10 +1,11 @@
 {
   "name": "@chatwoot/prosemirror-schema",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Schema setup for using prosemirror in chatwoot. Based on 👉 https://github.com/ProseMirror/prosemirror-example-setup/",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c",
     "prepare": "husky install"
   },
   "repository": "git+https://github.com/chatwoot/prosemirror-schema.git",
@@ -38,12 +39,15 @@
     "registry": "https://npm.pkg.github.com/@chatwoot"
   },
   "devDependencies": {
+    "@babel/core": "^7.22.20",
+    "@rollup/plugin-babel": "^6.0.3",
     "eslint": "^7.32.0 || ^8.2.0",
-    "eslint-config-prettier": "^9.0.0",
     "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-import": "^2.25.2",
     "husky": "^8.0.0",
-    "lint-staged": "^14.0.1"
+    "lint-staged": "^14.0.1",
+    "rollup": "^3.29.2"
   },
   "lint-staged": {
     "*.js": "eslint --fix"

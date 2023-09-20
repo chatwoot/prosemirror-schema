@@ -1,0 +1,26 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    name: Build on Node ${{ matrix.node }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        node: ["20.x", "16.x"]
+        os: [ubuntu-latest]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Use Node ${{ matrix.node }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install deps and build (with cache)
+        uses: bahmutov/npm-install@v1
+
+      - name: Build
+        run: yarn build

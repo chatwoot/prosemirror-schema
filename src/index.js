@@ -11,7 +11,7 @@ import {
   blocksInputRule,
   baseKeyMaps,
   textFormattingInputRules,
-} from "./rules";
+} from "./rules/index";
 import buildMenuOptions from "./menu/menuOptions";
 
 export { EditorState, Selection } from "prosemirror-state";
