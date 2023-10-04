@@ -48,11 +48,16 @@ export const paragraph = (state, node) => {
   state.closeBlock(node);
 };
 export const image = (state, node) => {
+  let src = state.esc(node.attrs.src);
+  const hasQueryAlready = src && src.indexOf('?') > -1;
+  if (node.attrs.height && !hasQueryAlready) {
+    src += `?cw_image_height=${node.attrs.height}px`;
+  }
   state.write(
     '![' +
       state.esc(node.attrs.alt || '') +
       '](' +
-      state.esc(node.attrs.src) +
+      src +
       (node.attrs.title ? ' ' + state.quote(node.attrs.title) : '') +
       ')'
   );

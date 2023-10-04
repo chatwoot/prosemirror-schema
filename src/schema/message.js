@@ -11,7 +11,32 @@ export const messageSchema = new Schema({
     code_block: schema.spec.nodes.get('code_block'),
     text: schema.spec.nodes.get('text'),
     hard_break: schema.spec.nodes.get('hard_break'),
-    image: schema.spec.nodes.get('image'),
+    image: {
+      ...schema.spec.nodes.get('image'),
+      attrs: {
+        ...schema.spec.nodes.get('image').attrs,
+        height: {default: null}
+      },
+      parseDOM: [{
+        tag: 'img[src]',
+        getAttrs: dom => ({
+          src: dom.getAttribute('src'),
+          title: dom.getAttribute('title'),
+          alt: dom.getAttribute('alt'),
+          height: parseInt(dom.style.height, 10)
+        })
+      }],
+      toDOM: node => {
+        const attrs = {
+          src: node.attrs.src,
+          alt: node.attrs.alt
+        };
+        if (node.attrs.height) {
+          attrs.style = `height: ${node.attrs.height}`;
+        }
+        return ["img", attrs];
+      }
+    }, 
     ordered_list: Object.assign(orderedList, {
       content: 'list_item+',
       group: 'block',
@@ -68,3 +93,5 @@ export const messageSchema = new Schema({
     },
   },
 });
+
+export default messageSchema;
