@@ -93,5 +93,3 @@ export const messageSchema = new Schema({
     },
   },
 });
-
-export default messageSchema;
