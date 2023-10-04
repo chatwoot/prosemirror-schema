@@ -35,9 +35,6 @@
     "prosemirror-utils": "^0.9.6",
     "prosemirror-view": "^1.17.2"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/@chatwoot"
-  },
   "devDependencies": {
     "@babel/core": "^7.22.20",
     "@rollup/plugin-babel": "^6.0.3",
