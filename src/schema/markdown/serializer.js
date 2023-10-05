@@ -49,9 +49,14 @@ export const paragraph = (state, node) => {
 };
 export const image = (state, node) => {
   let src = state.esc(node.attrs.src);
-  const hasQueryAlready = src && src.indexOf('?') > -1;
-  if (node.attrs.height && !hasQueryAlready) {
-    src += `?cw_image_height=${node.attrs.height}px`;
+  if (node.attrs.height) {
+    const param = `cw_image_height=${node.attrs.height}`;
+    if (src.includes('?')) {
+      src = src.includes('cw_image_height=') ? 
+        src.replace(/cw_image_height=[^&]+/, param) : `${src}&${param}`;
+    } else {
+      src += `?${param}`;
+    }
   }
   state.write(
     '![' +

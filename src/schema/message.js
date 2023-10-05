@@ -23,13 +23,14 @@ export const messageSchema = new Schema({
           src: dom.getAttribute('src'),
           title: dom.getAttribute('title'),
           alt: dom.getAttribute('alt'),
-          height: parseInt(dom.style.height, 10)
+          height: parseInt(dom.style.height)
         })
       }],
       toDOM: node => {
         const attrs = {
           src: node.attrs.src,
-          alt: node.attrs.alt
+          alt: node.attrs.alt,
+          height: node.attrs.height
         };
         if (node.attrs.height) {
           attrs.style = `height: ${node.attrs.height}`;
