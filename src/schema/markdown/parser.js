@@ -47,11 +47,16 @@ export const baseNodesMdToPmMapping = {
   },
   image: {
     node: 'image',
-    getAttrs: (tok) => ({
-      src: tok.attrGet('src'),
-      title: tok.attrGet('title') || null,
-      alt: (tok.children[0] && tok.children[0].content) || null,
-    }),
+    getAttrs: (tok) => {
+      const src = tok.attrGet('src');
+      const heightMatch = src.match(/cw_image_height=(\d+)px/);
+      return {
+        src,
+        title: tok.attrGet('title') || null,
+        alt: (tok.children[0] && tok.children[0].content) || null,
+        height: heightMatch ? `${heightMatch[1]}px` : null
+      };
+    },
   },
 };
 

@@ -48,11 +48,21 @@ export const paragraph = (state, node) => {
   state.closeBlock(node);
 };
 export const image = (state, node) => {
+  let src = state.esc(node.attrs.src);
+  if (node.attrs.height) {
+    const param = `cw_image_height=${node.attrs.height}`;
+    if (src.includes('?')) {
+      src = src.includes('cw_image_height=') ? 
+        src.replace(/cw_image_height=[^&]+/, param) : `${src}&${param}`;
+    } else {
+      src += `?${param}`;
+    }
+  }
   state.write(
     '![' +
       state.esc(node.attrs.alt || '') +
       '](' +
-      state.esc(node.attrs.src) +
+      src +
       (node.attrs.title ? ' ' + state.quote(node.attrs.title) : '') +
       ')'
   );
