@@ -36,6 +36,8 @@ md.enable([
   'escape',
 ]);
 
+md.disable(['table', 'hr']);
+
 export class MessageMarkdownTransformer {
   constructor(schema, tokenizer = md) {
     // Enable markdown plugins based on schema
