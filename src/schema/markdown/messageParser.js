@@ -36,7 +36,7 @@ md.enable([
   'escape',
 ]);
 
-md.disable(['table', 'hr', 'heading']);
+md.disable(['table', 'hr', 'heading', 'lheading'], true);
 
 export class MessageMarkdownTransformer {
   constructor(schema, tokenizer = md) {
