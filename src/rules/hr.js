@@ -27,7 +27,10 @@ function createHorizontalRuleInputRule(type) {
 
 export function hrInputRules(schema) {
   if (!schema.nodes.horizontal_rule) {
-    return null; // Ensures that horizontal_rule is part of the schema
+    // Ensures that horizontal_rule is part of the schema
+    return inputRules({
+      rules: [],
+    });
   }
 
   const hrRule = createHorizontalRuleInputRule(schema.nodes.horizontal_rule);
