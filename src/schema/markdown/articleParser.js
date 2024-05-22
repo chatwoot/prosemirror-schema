@@ -59,6 +59,7 @@ export class ArticleMarkdownTransformer {
         }
       }
     });
+
     this.markdownParser = new MarkdownParser(
       schema,
       tokenizer,
