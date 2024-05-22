@@ -8,6 +8,7 @@ import Placeholder from "./Placeholder";
 import {
   listInputRules,
   linksInputRules,
+  hrInputRules,
   blocksInputRule,
   baseKeyMaps,
   textFormattingInputRules,
@@ -39,6 +40,7 @@ export const buildEditor = ({
   blocksInputRule(schema),
   textFormattingInputRules(schema),
   linksInputRules(schema),
+  hrInputRules(schema),
   listInputRules(schema),
   dropCursor(),
   gapCursor(),
