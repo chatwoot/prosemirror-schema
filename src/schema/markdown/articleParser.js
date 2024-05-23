@@ -21,7 +21,7 @@ export const articleSchemaToMdMapping = {
 export const articleMdToPmMapping = {
   ...baseNodesMdToPmMapping,
   ...baseMarksMdToPmMapping,
-  hr: { node: 'rule' },
+  hr: { node: 'horizontal_rule' },
   heading: {
     block: 'heading',
     attrs: tok => ({ level: +tok.tag.slice(1) }),
@@ -46,6 +46,7 @@ md.enable([
   'entity',
   // Process escaped chars and hardbreaks
   'escape',
+  'hr',
 ]);
 
 export class ArticleMarkdownTransformer {
