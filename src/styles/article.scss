@@ -1,4 +1,4 @@
-@use 'base.scss';
+@use "base.scss";
 
 .editor-root.editor--article {
   position: relative;
@@ -17,7 +17,8 @@
   .ProseMirror {
     p {
       font-size: var(--font-size-medium);
-      line-height: 1.77;
+      line-height: 1.75rem;
+      margin-bottom: var(--space-medium);
     }
 
     strong code {
@@ -41,28 +42,36 @@
     }
 
     hr {
-      margin: var(--space-larger) 0;
       border-color: var(--s-100);
+      margin-bottom: var(--space-big);
     }
 
     h1 {
-      margin-bottom: var(--space-large);
-    }
-
-    h2 {
+      font-size: var(--font-size-big);
+      font-weight: var(--font-weight-heavy);
       margin-bottom: var(--space-medium);
     }
 
-    h3 {
+    h2 {
+      font-size: var(--font-size-large);
+      font-weight: var(--font-weight-black);
+      margin-bottom: var(--space-medium);
+    }
+
+    h3,
+    h4 {
+      font-size: var(--font-size-medium);
+      font-weight: var(--font-weight-bold);
       margin-bottom: var(--space-normal);
     }
 
-    h4,
     h5 {
+      font-size: var(--font-size-medium);
       margin-bottom: var(--space-small);
     }
 
     h6 {
+      font-size: var(--font-size-medium);
       margin-bottom: var(--space-smaller);
     }
 
@@ -76,15 +85,26 @@
 
     ul,
     ol {
+      margin-top: var(--space-medium);
+      margin-bottom: var(--space-medium);
       padding-left: var(--space-large);
+    }
+
+    li {
+      ul,
+      ol {
+        margin-top: var(--space-normal);
+        margin-bottom: var(--space-normal);
+      }
+      p {
+        padding-left: var(--space-medium);
+        margin-top: var(--space-small);
+        margin-bottom: var(--space-small);
+      }
     }
 
     pre {
       padding: var(--space-normal);
-      margin-bottom: var(--space-normal);
-    }
-
-    p {
       margin-bottom: var(--space-normal);
     }
   }
