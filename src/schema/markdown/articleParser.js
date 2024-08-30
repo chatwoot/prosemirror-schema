@@ -1,7 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import MarkdownItSup from 'markdown-it-sup';
 import { MarkdownParser } from 'prosemirror-markdown';
-import MarkdownItMultimdTable from 'markdown-it-multimd-table';
+import markdownItTable from '../../rules/tables';
 
 import {
   baseSchemaToMdMapping,
@@ -65,13 +65,7 @@ const md = MarkdownIt('commonmark', {
   html: false,
   linkify: true,
   breaks: true,
-}).use(MarkdownItSup).use(MarkdownItMultimdTable, {
-  multiline:  false,
-  rowspan:    false,
-  headerless: false,
-  multibody:  false,
-  autolabel:  false,
-});
+}).use(MarkdownItSup).use(markdownItTable);
 
 md.enable([
   // Process html entity - &#123;, &#xAF;, &quot;, ...
