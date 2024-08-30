@@ -152,3 +152,52 @@ function isPlainURL(link, parent, index, side) {
   let next = parent.child(index + (side < 0 ? -2 : 1));
   return !link.isInSet(next.marks);
 }
+
+
+// Table Serialization
+
+const renderInlineToString = (state, node) => {
+  let result = '';
+  node.forEach((childNode) => {
+    if (childNode.isText) {
+      result += childNode.text;
+    } else {
+      state.renderInline(childNode);
+    }
+  });
+  return result;
+};
+
+export const table = (state, node) => {
+  state.ensureNewLine();
+  node.forEach((row, rowIndex) => {
+    state.render(row, node, rowIndex);
+    if (rowIndex === 0) {
+      state.write('|');
+      row.forEach(() => {
+        state.write(' --- |');
+      });
+      state.write('\n');
+    }
+  });
+};
+
+export const table_row = (state, node) => {
+  state.write('|');
+  node.forEach((cell, cellIndex) => {
+    state.render(cell, node, cellIndex);
+  });
+  state.write('\n');
+};
+
+export const table_cell = (state, node) => {
+  state.write(' ');
+  if (node.content.size > 0) {
+    const cellContent = renderInlineToString(state, node);
+    // Remove all newlines and trim excess whitespace
+    state.write(cellContent.replace(/\n+/g, ' ').trim());
+  } else {
+    state.write(' ');
+  }
+  state.write(' |');
+};

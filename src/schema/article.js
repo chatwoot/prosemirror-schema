@@ -1,6 +1,7 @@
 import { orderedList, bulletList, listItem } from 'prosemirror-schema-list';
 import { Schema } from 'prosemirror-model';
 import { schema } from 'prosemirror-markdown';
+import { tableNodes } from 'prosemirror-tables';
 
 export const fullSchema = new Schema({
   nodes: {
@@ -22,6 +23,22 @@ export const fullSchema = new Schema({
       group: 'block',
     }),
     list_item: Object.assign(listItem, { content: 'paragraph block*' }),
+    ...tableNodes({
+      tableGroup: 'block',
+      cellContent: 'paragraph+',
+      cellAttributes: {
+        background: {
+          default: null,
+          getFromDOM: (dom) => dom.style.backgroundColor || null,
+          setDOMAttr: (value, attrs) => {
+            if (value) attrs.style = (attrs.style || '') + `background-color: ${value};`;
+          },
+        },
+        colspan: { default: 1 },
+        rowspan: { default: 1 },
+        alignment: { default: null },
+      },
+    }),
   },
   marks: {
     link: schema.spec.marks.get('link'),

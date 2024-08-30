@@ -1,6 +1,8 @@
 import MarkdownIt from 'markdown-it';
 import MarkdownItSup from 'markdown-it-sup';
 import { MarkdownParser } from 'prosemirror-markdown';
+import MarkdownItMultimdTable from 'markdown-it-multimd-table';
+
 import {
   baseSchemaToMdMapping,
   baseNodesMdToPmMapping,
@@ -14,6 +16,7 @@ export const articleSchemaToMdMapping = {
     rule: 'hr',
     heading: ['heading'],
     image: 'image',
+    // table: 'table',
   },
   marks: { ...baseSchemaToMdMapping.marks },
 };
@@ -33,13 +36,42 @@ export const articleMdToPmMapping = {
       return { userId, userFullName };
     },
   },
+  table: { 
+    node: 'table',
+    getAttrs: tok => ({ alignment: tok.info })
+  },
+  tr: {
+    node: 'table_row',
+  },
+  td: {
+    node: 'table_cell',
+    getAttrs: tok => ({
+      colspan: +(tok.attrGet("colspan") || 1),
+      rowspan: +(tok.attrGet("rowspan") || 1),
+      alignment: tok.info,
+    }),
+  },
+  th: {
+    node: 'table_header',
+    getAttrs: tok => ({
+      colspan: +(tok.attrGet("colspan") || 1),
+      rowspan: +(tok.attrGet("rowspan") || 1),
+      alignment: tok.info,
+    }),
+  },
 };
 
 const md = MarkdownIt('commonmark', {
   html: false,
   linkify: true,
   breaks: true,
-}).use(MarkdownItSup);
+}).use(MarkdownItSup).use(MarkdownItMultimdTable, {
+  multiline:  false,
+  rowspan:    false,
+  headerless: false,
+  multibody:  false,
+  autolabel:  false,
+});
 
 md.enable([
   // Process html entity - &#123;, &#xAF;, &quot;, ...
@@ -47,6 +79,7 @@ md.enable([
   // Process escaped chars and hardbreaks
   'escape',
   'hr',
+  // 'table',
 ]);
 
 export class ArticleMarkdownTransformer {
@@ -66,6 +99,7 @@ export class ArticleMarkdownTransformer {
       filterMdToPmSchemaMapping(schema, articleMdToPmMapping)
     );
   }
+
   encode(_node) {
     throw new Error('This is not implemented yet');
   }

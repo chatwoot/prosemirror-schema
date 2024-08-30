@@ -18,6 +18,9 @@ import {
   strong,
   link,
   code,
+  table,
+  table_row,
+  table_cell,
 } from './serializer';
 
 export const ArticleMarkdownSerializer = new MarkdownSerializerBase(
@@ -33,6 +36,9 @@ export const ArticleMarkdownSerializer = new MarkdownSerializerBase(
     image,
     hard_break,
     text,
+    table,
+    table_row,
+    table_cell,
   },
   {
     em,

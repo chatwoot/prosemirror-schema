@@ -3,7 +3,9 @@ import { Plugin } from "prosemirror-state";
 import { dropCursor } from "prosemirror-dropcursor";
 import { gapCursor } from "prosemirror-gapcursor";
 import { menuBar } from "prosemirror-menu";
-
+import { keymap } from "prosemirror-keymap";
+import { tableEditing, goToNextCell } from "prosemirror-tables";
+// import { tableInputRule } from "./rules/tables";
 import Placeholder from "./Placeholder";
 import {
   listInputRules,
@@ -52,9 +54,19 @@ export const buildEditor = ({
       onImageUpload,
     }),
   }),
+  // Add table-related plugins only if enabledMenuOptions includes 'table'
+  ...(enabledMenuOptions.includes('table') ? [
+    // tableInputRule(schema),
+    tableEditing(),
+    keymap({
+      Tab: goToNextCell(1),
+      'Shift-Tab': goToNextCell(-1),
+    }),
+  ] : []),
   new Plugin({
     props: {
       attributes: { class: "ProseMirror-woot-style" },
     },
   }),
+
 ];

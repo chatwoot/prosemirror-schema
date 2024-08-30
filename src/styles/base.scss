@@ -61,6 +61,23 @@ li.ProseMirror-selectednode:after {
 .ProseMirror-menuitem {
   margin-right: var(--space-small);
   display: inline-block;
+  position: relative;
+
+  .ProseMirror-menu-dropdown-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: max-content;
+    background: white;
+    z-index: 10;
+    border: 1px solid var(--s-200);
+    border-radius: var(--border-radius-small);
+
+    .ProseMirror-menu-dropdown-item{
+      padding: 8px;
+      cursor: pointer;
+    }
+  }
 }
 
 .ProseMirror-menu-active {
