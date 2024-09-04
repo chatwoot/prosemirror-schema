@@ -6,29 +6,41 @@
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
-export const triggerCharacters = char => $position => {
-  const regexp = new RegExp(`(?:^)?${char}[^\\s${char}]*`, 'g');
+/**
+ * Creates a function to detect if the trigger character followed by a specified number of characters
+ * has been typed, starting from a new word or after a space.
+ * @param {string} char - The trigger character to detect.
+ * @param {number} [minChars=0] - The minimum number of characters that should follow the trigger character.
+ * @returns {Function} A function that takes a position object and returns true if the condition is met.
+ */
+export const triggerCharacters = (char, minChars = 0) => $position => {
+  // Regular expression to find occurrences of 'char' followed by at least 'minChars' non-space characters.
+  // It matches these sequences starting from the beginning of the text or after a space.
+  const regexp = new RegExp(`(^|\\s)(${char}[^\\s${char}]{${minChars},})`, 'g');
 
+  // Get the position before the current cursor position in the document.
   const textFrom = $position.before();
+  // Get the position at the end of the current node.
   const textTo = $position.end();
 
+  // Get the text between the start of the node and the cursor position.
   const text = $position.doc.textBetween(textFrom, textTo, '\0', '\0');
 
   let match;
 
   // eslint-disable-next-line
   while ((match = regexp.exec(text))) {
-    const prefix = match.input.slice(Math.max(0, match.index - 1), match.index);
-    if (!/^[\s\0]?$/.test(prefix)) {
-      // eslint-disable-next-line
-      continue;
-    }
+    const beforeChar = match[1]; // Will be empty at start of text, or a space in the middle
+    const fullMatch = match[2]; // Includes the trigger character and following text
 
-    const from = match.index + $position.start();
-    let to = from + match[0].length;
+    const from = match.index + $position.start() + beforeChar.length;
+    const to = from + fullMatch.length;
 
     if (from < $position.pos && to >= $position.pos) {
-      return { range: { from, to }, text: match[0] };
+      const trimmedText = fullMatch
+        ? fullMatch.slice(char.length).trim()
+        : ""; // Remove trigger char and trim
+      return { range: { from, to }, text: trimmedText };
     }
   }
   return null;
