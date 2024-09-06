@@ -1,6 +1,6 @@
 {
   "name": "@chatwoot/prosemirror-schema",
-  "version": "1.0.13",
+  "version": "1.0.16",
   "description": "Schema setup for using prosemirror in chatwoot. Based on 👉 https://github.com/ProseMirror/prosemirror-example-setup/",
   "main": "dist/index.js",
   "scripts": {
