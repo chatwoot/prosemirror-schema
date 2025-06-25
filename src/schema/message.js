@@ -48,7 +48,11 @@ export const messageSchema = new Schema({
     }),
     list_item: Object.assign(listItem, { content: 'paragraph block*' }),
     mention: {
-      attrs: { userFullName: { default: '' }, userId: { default: '' } },
+      attrs: { 
+        userFullName: { default: '' }, 
+        userId: { default: '' },
+        mentionType: { default: 'user' }
+      },
       group: 'inline',
       inline: true,
       selectable: true,
@@ -60,6 +64,7 @@ export const messageSchema = new Schema({
           class: 'prosemirror-mention-node',
           'mention-user-id': node.attrs.userId,
           'mention-user-full-name': node.attrs.userFullName,
+          'mention-type': node.attrs.mentionType,
         },
         `@${node.attrs.userFullName}`,
       ],
@@ -69,7 +74,9 @@ export const messageSchema = new Schema({
           getAttrs: dom => {
             const userId = dom.getAttribute('mention-user-id');
             const userFullName = dom.getAttribute('mention-user-full-name');
-            return { userId, userFullName };
+            const mentionType = dom.getAttribute('mention-type') || 'user';
+            
+            return { userId, userFullName, mentionType };
           },
         },
       ],

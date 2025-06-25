@@ -1,34 +1,13 @@
-/**
- * Serializes mention nodes to markdown format with proper URI scheme.
- * 
- * Handles both user and team mentions by detecting the 'team:' prefix in userId:
- * - User mentions: mention://user/123/UserName
- * - Team mentions: mention://team/456/TeamName
- * 
- * @param {Object} state - The markdown serializer state
- * @param {Object} node - The mention node with attrs: { userId, userFullName }
- */
 export const mention = (state, node) => {
   const userId = String(node.attrs.userId || '');
   const displayName = node.attrs.userFullName || '';
-  
-  // Check if userId is encoded with team prefix (e.g., 'team:123')
-  // This encoding is done in the editor helper to distinguish team mentions from user mentions
-  const isTeamMention = userId.startsWith('team:');
-  const mentionType = node.attrs.mentionType || (isTeamMention ? 'team' : 'user');
-  
-  // Extract actual ID by removing the 'team:' prefix for team mentions
-  // 'team:123' becomes '123', regular user IDs remain unchanged
-  const actualUserId = isTeamMention ? userId.substring(5) : userId;
+  const mentionType = node.attrs.mentionType || 'user';
 
-  // Generate the mention URI with proper scheme:
-  // mention://user/ID/DisplayName or mention://team/ID/DisplayName
   const uri = state.esc(
-    `mention://${mentionType}/${actualUserId}/${encodeURIComponent(displayName)}`
+    `mention://${mentionType}/${userId}/${encodeURIComponent(displayName)}`
   );
   const escapedDisplayName = state.esc(`@${displayName}`);
 
-  // Write the markdown link format: [@DisplayName](mention://type/id/name)
   state.write(`[${escapedDisplayName}](${uri})`);
 };
 
