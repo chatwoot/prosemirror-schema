@@ -1,13 +1,16 @@
 export const mention = (state, node) => {
+  const userId = String(node.attrs.userId || '');
+  const displayName = node.attrs.userFullName || '';
+  const mentionType = node.attrs.mentionType || 'user';
+
   const uri = state.esc(
-    `mention://user/${node.attrs.userId}/${encodeURIComponent(
-      node.attrs.userFullName
-    )}`
+    `mention://${mentionType}/${userId}/${encodeURIComponent(displayName)}`
   );
-  const escapedDisplayName = state.esc('@' + (node.attrs.userFullName || ''));
+  const escapedDisplayName = state.esc(`@${displayName}`);
 
   state.write(`[${escapedDisplayName}](${uri})`);
 };
+
 
 export const blockquote = (state, node) => {
   state.wrapBlock('> ', null, node, () => state.renderContent(node));

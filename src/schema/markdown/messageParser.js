@@ -18,8 +18,10 @@ export const messageMdToPmMapping = {
   mention: {
     node: 'mention',
     getAttrs: ({ mention }) => {
-      const { userId, userFullName } = mention;
-      return { userId, userFullName };
+      const { userId, userFullName, mentionType = 'user' } = mention;
+      const attrs = { userId, userFullName, mentionType };
+      
+      return attrs;
     },
   },
 };
