@@ -81,6 +81,33 @@ export const messageSchema = new Schema({
         },
       ],
     },
+    tools: {
+      attrs: { id: { default: '' }, name: { default: '' } },
+      group: 'inline',
+      inline: true,
+      selectable: true,
+      draggable: true,
+      atom: true,
+      toDOM: node => [
+        'span',
+        {
+          class: 'prosemirror-tools-node',
+          'tool-id': node.attrs.id,
+          'tool-name': node.attrs.name,
+        },
+        `@${node.attrs.name}`,
+      ],
+      parseDOM: [
+        {
+          tag: 'span[tool-id][tool-name]',
+          getAttrs: dom => {
+            const id = dom.getAttribute('tool-id');
+            const name = dom.getAttribute('tool-name');
+            return { id, name };
+          },
+        },
+      ],
+    },
   },
   marks: {
     link: schema.spec.marks.get('link'),

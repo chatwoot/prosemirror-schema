@@ -24,6 +24,13 @@ export const messageMdToPmMapping = {
       return attrs;
     },
   },
+  tools: {
+    node: 'tools',
+    getAttrs: ({ tools }) => {
+      const { id, name } = tools;
+      return { id, name };
+    },
+  },
 };
 
 const md = MarkdownIt('commonmark', {
