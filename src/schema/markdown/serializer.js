@@ -11,6 +11,11 @@ export const mention = (state, node) => {
   state.write(`[${escapedDisplayName}](${uri})`);
 };
 
+export const tools = (state, node) => {
+  const uri = state.esc(`tool://${node.attrs.id}`);
+  const escapedDisplayName = state.esc(`@${node.attrs.name}`);
+  state.write(`[${escapedDisplayName}](${uri})`);
+};
 
 export const blockquote = (state, node) => {
   state.wrapBlock('> ', null, node, () => state.renderContent(node));
