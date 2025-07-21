@@ -19,8 +19,13 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
       - name: Install deps and build (with cache)
-        uses: bahmutov/npm-install@v1
+        run: pnpm install
 
       - name: Build
-        run: yarn build
+        run: pnpm build
