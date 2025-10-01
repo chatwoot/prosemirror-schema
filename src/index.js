@@ -30,7 +30,7 @@ export { messageSchema } from "./schema/message";
 export const buildEditor = ({
   schema,
   placeholder,
-  methods: { onImageUpload } = {},
+  methods: { onImageUpload, onCopilotClick } = {},
   plugins = [],
   enabledMenuOptions,
 }) => [
@@ -50,6 +50,7 @@ export const buildEditor = ({
     content: buildMenuOptions(schema, {
       enabledMenuOptions,
       onImageUpload,
+      onCopilotClick,
     }),
   }),
   new Plugin({

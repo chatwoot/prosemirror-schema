@@ -29,6 +29,21 @@ const imageUploadItem = (nodeType, onImageUpload) =>
     },
   });
 
+const copilotItem = (nodeType, onCopilotClick) => {
+  return new MenuItem({
+    title: "Copilot",
+    icon: icons.sparkles,
+    class: "ProseMirror-copilot",
+    run: () => {
+      onCopilotClick();
+      return true;
+    },
+    enable() {
+      return true;
+    },
+  });
+};
+
 const headerItem = (nodeType, options) => {
   const { level = 1 } = options;
   return new MenuItem({
@@ -101,6 +116,7 @@ const buildMenuOptions = (
       "orderedList",
     ],
     onImageUpload = () => {},
+    onCopilotClick = () => {},
   }
 ) => {
   const availableMenuOptions = {
@@ -153,6 +169,7 @@ const buildMenuOptions = (
       icon: icons.h3,
     }),
     imageUpload: imageUploadItem(schema.nodes.image, onImageUpload),
+    copilot: copilotItem(schema.nodes.copilot, onCopilotClick),
   };
 
   return [
