@@ -1,22 +1,38 @@
 import { Plugin } from "prosemirror-state";
 
 /**
- * Replaces an image node in the editor with a new image URL.
- *
- * @param {string} currentUrl - The current URL of the image to be replaced.
- * @param {string} newUrl - The new URL to replace the current image with.
- * @param {EditorView} view - The ProseMirror editor view.
+ * Check if URL is valid HTTP/HTTPS.
+ * @param {string} url - URL to validate
+ * @returns {boolean} True if valid HTTP/HTTPS URL
  */
-function replaceImage(currentUrl, newUrl, view) {
+function isValidImageUrl(url) {
+  if (!url) return false;
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Update or remove an image in the editor.
+ * @param {string} oldUrl - Current image URL
+ * @param {string|null} newUrl - New URL to replace with, or null to remove
+ * @param {EditorView} view - ProseMirror editor view
+ */
+function modifyImage(oldUrl, newUrl, view) {
+  const tr = view.state.tr;
+
   view.state.doc.descendants((node, pos) => {
-    if (node.type.name === "image" && node.attrs.src === currentUrl) {
-      const tr = view.state.tr.setNodeMarkup(pos, null, {
-        ...node.attrs,
-        src: newUrl,
-      });
-      view.dispatch(tr);
+    if (node.type.name === "image" && node.attrs.src === oldUrl) {
+      newUrl
+        ? tr.setNodeMarkup(pos, null, { ...node.attrs, src: newUrl })
+        : tr.delete(pos, pos + node.nodeSize);
     }
   });
+
+  if (tr.docChanged) view.dispatch(tr);
 }
 
 /**
@@ -37,20 +53,33 @@ const imagePastePlugin = (uploadImage) =>
        * @param {Slice} slice - The ProseMirror Slice object representing the pasted content.
        */
       handlePaste(view, event, slice) {
-        const imageUrls = [];
+        const valid = [];
+        const invalid = [];
+
+        // Collect image URLs
         slice.content.descendants((node) => {
           if (node.type.name === "image") {
-            imageUrls.push(node.attrs.src);
+            const url = node.attrs.src;
+            const isValid = isValidImageUrl(url);
+            isValid ? valid.push(url) : invalid.push(url);
           }
         });
-        Promise.all(imageUrls.map(async (url) => {
-          try {
-            const newUrl = await uploadImage(url);
-            replaceImage(url, newUrl, view);
-          } catch (error) {
-            console.error("Error uploading image:", error);
-          }
-        }));
+
+        // Process after paste completes
+        setTimeout(() => {
+          // Remove invalid images
+          invalid.forEach((url) => modifyImage(url, null, view));
+
+          // Upload valid images
+          valid.forEach(async (url) => {
+            try {
+              const newUrl = await uploadImage(url);
+              modifyImage(url, newUrl, view);
+            } catch (error) {
+              console.error("Error uploading image:", error);
+            }
+          });
+        }, 0);
       },
     },
   });
