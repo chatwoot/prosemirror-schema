@@ -132,6 +132,10 @@ const buildMenuOptions = (
       title: "Toggle code font",
       icon: icons.code,
     }),
+    strike: markItem(schema.marks.strike, {
+      title: "Toggle strikethrough",
+      icon: icons.strike,
+    }),
     link: linkItem(schema.marks.link),
     bulletList: wrapListItem(schema.nodes.bullet_list, {
       title: "Wrap in bullet list",

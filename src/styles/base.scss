@@ -1,4 +1,4 @@
-@use '_variables.scss';
+@use "_variables.scss";
 
 .ProseMirror {
   padding: var(--space-smaller);
@@ -33,7 +33,7 @@ li.ProseMirror-selectednode {
 }
 
 li.ProseMirror-selectednode:after {
-  content: '';
+  content: "";
   position: absolute;
   left: -32px;
   right: -2px;
@@ -59,7 +59,7 @@ li.ProseMirror-selectednode:after {
 }
 
 .ProseMirror-menuitem {
-  margin-right: var(--space-small);
+  margin-right: 14px;
   display: inline-block;
 }
 
@@ -90,7 +90,7 @@ li.ProseMirror-selectednode:after {
   display: inline-block;
   line-height: 0.8;
   vertical-align: -2px;
-  padding: var(--space-small);
+  padding: var(--space-smaller);
   cursor: pointer;
   box-sizing: content-box;
 }
@@ -100,9 +100,11 @@ li.ProseMirror-selectednode:after {
 }
 
 .ProseMirror-icon svg {
-  fill: currentColor;
-  width: var(--space-slab) !important;
-  height: var(--space-slab);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  width: 14px !important;
+  height: 14px;
 }
 
 .ProseMirror-icon span {
@@ -116,7 +118,7 @@ li.ProseMirror-selectednode:after {
 }
 
 .ProseMirror-gapcursor:after {
-  content: '';
+  content: "";
   display: block;
   position: absolute;
   top: -2px;
@@ -142,7 +144,7 @@ li.ProseMirror-selectednode:after {
   background: white;
 }
 
-.ProseMirror-prompt input[type='text'] {
+.ProseMirror-prompt input[type="text"] {
   padding: 0 4px;
 }
 
@@ -157,7 +159,7 @@ li.ProseMirror-selectednode:after {
 }
 
 .ProseMirror-prompt-close:after {
-  content: 'âœ•';
+  content: "âœ•";
   font-size: 12px;
 }
 
@@ -226,8 +228,8 @@ li.ProseMirror-selectednode:after {
   strong code,
   p code {
     background: var(--s-75);
-    font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas',
-      '"Liberation Mono"', '"Courier New"', 'monospace';
+    font-family: "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+      '"Liberation Mono"', '"Courier New"', "monospace";
     border-radius: var(--border-radius-small);
     padding: var(--space-smaller);
     color: var(--s-800);

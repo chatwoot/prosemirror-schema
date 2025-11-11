@@ -26,6 +26,7 @@ export { MessageMarkdownSerializer } from "./schema/markdown/messageSerializer";
 
 export { fullSchema } from "./schema/article";
 export { messageSchema } from "./schema/message";
+export { buildMessageSchema } from "./schema/schemaBuilder";
 
 export const buildEditor = ({
   schema,
@@ -33,29 +34,30 @@ export const buildEditor = ({
   methods: { onImageUpload, onCopilotClick } = {},
   plugins = [],
   enabledMenuOptions,
-}) => [
-  ...(plugins || []),
-  history(),
-  baseKeyMaps(schema),
-  blocksInputRule(schema),
-  textFormattingInputRules(schema),
-  linksInputRules(schema),
-  hrInputRules(schema),
-  listInputRules(schema),
-  dropCursor(),
-  gapCursor(),
-  Placeholder(placeholder),
-  menuBar({
-    floating: true,
-    content: buildMenuOptions(schema, {
-      enabledMenuOptions,
-      onImageUpload,
-      onCopilotClick,
+}) =>
+  [
+    ...(plugins || []),
+    history(),
+    baseKeyMaps(schema),
+    blocksInputRule(schema),
+    textFormattingInputRules(schema),
+    linksInputRules(schema),
+    hrInputRules(schema),
+    listInputRules(schema),
+    dropCursor(),
+    gapCursor(),
+    Placeholder(placeholder),
+    menuBar({
+      floating: true,
+      content: buildMenuOptions(schema, {
+        enabledMenuOptions,
+        onImageUpload,
+        onCopilotClick,
+      }),
     }),
-  }),
-  new Plugin({
-    props: {
-      attributes: { class: "ProseMirror-woot-style" },
-    },
-  }),
-];
+    new Plugin({
+      props: {
+        attributes: { class: "ProseMirror-woot-style" },
+      },
+    }),
+  ].filter(Boolean);
