@@ -19,6 +19,7 @@ export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link
   const hasOrderedList = enabledNodes.includes('orderedList');
   const hasCodeBlock = enabledNodes.includes('codeBlock');
   const hasBlockquote = enabledNodes.includes('blockquote');
+  const hasImage = enabledNodes.includes('image');
 
   // Define nodes - copy from messageSchema but with restricted marks
   const nodes = {
@@ -40,33 +41,36 @@ export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link
     } : {}),
     text: baseSchema.spec.nodes.get('text'),
     hard_break: baseSchema.spec.nodes.get('hard_break'),
-    image: {
-      ...baseSchema.spec.nodes.get('image'),
-      attrs: {
-        ...baseSchema.spec.nodes.get('image').attrs,
-        height: { default: null }
-      },
-      parseDOM: [{
-        tag: 'img[src]',
-        getAttrs: dom => ({
-          src: dom.getAttribute('src'),
-          title: dom.getAttribute('title'),
-          alt: dom.getAttribute('alt'),
-          height: parseInt(dom.style.height)
-        })
-      }],
-      toDOM: node => {
-        const attrs = {
-          src: node.attrs.src,
-          alt: node.attrs.alt,
-          height: node.attrs.height
-        };
-        if (node.attrs.height) {
-          attrs.style = `height: ${node.attrs.height}`;
+    // Only add image if enabled
+    ...(hasImage ? {
+      image: {
+        ...baseSchema.spec.nodes.get('image'),
+        attrs: {
+          ...baseSchema.spec.nodes.get('image').attrs,
+          height: { default: null }
+        },
+        parseDOM: [{
+          tag: 'img[src]',
+          getAttrs: dom => ({
+            src: dom.getAttribute('src'),
+            title: dom.getAttribute('title'),
+            alt: dom.getAttribute('alt'),
+            height: parseInt(dom.style.height)
+          })
+        }],
+        toDOM: node => {
+          const attrs = {
+            src: node.attrs.src,
+            alt: node.attrs.alt,
+            height: node.attrs.height
+          };
+          if (node.attrs.height) {
+            attrs.style = `height: ${node.attrs.height}`;
+          }
+          return ["img", attrs];
         }
-        return ["img", attrs];
-      }
-    },
+      },
+    } : {}),
     // Only add list nodes if enabled
     ...(hasOrderedList ? {
       ordered_list: Object.assign({}, orderedList, {
