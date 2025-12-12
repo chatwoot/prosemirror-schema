@@ -1,3 +1,26 @@
+// Checks if any following sibling has text content
+// Used by: paragraph, hard_break serializers to decide if backslash is needed
+// Edge case: returns false for trailing empty paragraphs (no backslash needed)
+const hasTextContentAfter = (parent, startIndex) => {
+  const count = parent.childCount;
+  for (let i = startIndex; i < count; i++) {
+    const child = parent.child(i);
+    if (child.childCount > 0 || child.textContent.trim()) return true;
+  }
+  return false;
+};
+
+// Checks if previous sibling paragraph ends with hard_break
+// Used by: paragraph serializer to avoid double backslash after Shift+Enter + Enter
+const prevEndsWithHardBreak = (parent, index) => {
+  if (index <= 0) return false;
+  const prev = parent.child(index - 1);
+  return prev.childCount > 0 && prev.lastChild.type.name === 'hard_break';
+};
+
+/**
+ * Markdown Serializer
+*/
 export const mention = (state, node) => {
   const userId = String(node.attrs.userId || '');
   const displayName = node.attrs.userFullName || '';
@@ -51,27 +74,18 @@ export const ordered_list = (state, node) => {
 export const list_item = (state, node) => {
   state.renderContent(node);
 };
+
+// Paragraph serializer (handles Enter key)
+// - Empty paragraph + text after + prev not ending with hard_break → outputs "\"
+// - Empty paragraph + no text after → outputs newline only (no backslash)
+// - Empty paragraph after hard_break → outputs newline only (prevents literal "\" showing)
 export const paragraph = (state, node, parent, index) => {
-  // render empty paragraphs as hard breaks to ensure that newlines are
-  // persisted between reloads (this breaks from markdown tradition)
-  // But skip trailing empty paragraphs to avoid backslash at end
-  if (
-    node.textContent.trim() === "" &&
-    node.childCount === 0 &&
-    !state.inTable
-  ) {
-    // Check if previous sibling ends with hard_break - if so, output newline without backslash
-    if (index > 0) {
-      const prevSibling = parent.child(index - 1);
-      if (prevSibling.childCount > 0 && 
-          prevSibling.lastChild.type.name === 'hard_break') {
-        state.write('\n');
-        return;
-      }
-    }
-    if (index < parent.childCount - 1) {
-      state.write('\\\n');
-    }
+  const isEmpty = node.textContent.trim() === '' && node.childCount === 0 && !state.inTable;
+  
+  if (isEmpty) {
+    const hasTextAfter = hasTextContentAfter(parent, index + 1);
+    const useBackslash = hasTextAfter && !prevEndsWithHardBreak(parent, index);
+    state.write(useBackslash ? '\\\n' : '\n');
   } else {
     state.renderInline(node);
     state.closeBlock(node);
@@ -97,12 +111,22 @@ export const image = (state, node) => {
       ')'
   );
 };
+// Hard break serializer (handles Shift+Enter)
+// - Text content after → outputs "\" (line break works correctly)
+// - No text after (trailing) → outputs newline only (prevents literal "\" showing)
 export const hard_break = (state, node, parent, index) => {
-  for (let i = index + 1; i < parent.childCount; i += 1)
-    if (parent.child(i).type !== node.type) {
-      state.write('\\\n');
-      return;
+  let hasMeaningful = false;
+  const count = parent.childCount;
+  for (let i = index + 1; i < count; i++) {
+    const sibling = parent.child(i);
+    const name = sibling.type.name;
+    if (name === 'text') {
+      if (sibling.text.trim()) { hasMeaningful = true; break; }
+    } else if (name !== 'hard_break') {
+      hasMeaningful = true; break;
     }
+  }
+  state.write(hasMeaningful ? '\\\n' : '\n');
 };
 export const text = (state, node) => {
   state.text(node.text, false);
