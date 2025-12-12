@@ -51,9 +51,31 @@ export const ordered_list = (state, node) => {
 export const list_item = (state, node) => {
   state.renderContent(node);
 };
-export const paragraph = (state, node) => {
-  state.renderInline(node);
-  state.closeBlock(node);
+export const paragraph = (state, node, parent, index) => {
+  // render empty paragraphs as hard breaks to ensure that newlines are
+  // persisted between reloads (this breaks from markdown tradition)
+  // But skip trailing empty paragraphs to avoid backslash at end
+  if (
+    node.textContent.trim() === "" &&
+    node.childCount === 0 &&
+    !state.inTable
+  ) {
+    // Check if previous sibling ends with hard_break - if so, output newline without backslash
+    if (index > 0) {
+      const prevSibling = parent.child(index - 1);
+      if (prevSibling.childCount > 0 && 
+          prevSibling.lastChild.type.name === 'hard_break') {
+        state.write('\n');
+        return;
+      }
+    }
+    if (index < parent.childCount - 1) {
+      state.write('\\\n');
+    }
+  } else {
+    state.renderInline(node);
+    state.closeBlock(node);
+  }
 };
 export const image = (state, node) => {
   let src = state.esc(node.attrs.src);
@@ -76,9 +98,9 @@ export const image = (state, node) => {
   );
 };
 export const hard_break = (state, node, parent, index) => {
-  for (let i = index + 1; i < parent.childCount; i++)
+  for (let i = index + 1; i < parent.childCount; i += 1)
     if (parent.child(i).type !== node.type) {
-      state.write('  \n');
+      state.write('\\\n');
       return;
     }
 };
