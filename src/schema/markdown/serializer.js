@@ -115,18 +115,16 @@ export const image = (state, node) => {
 // - Text content after → outputs "\" (line break works correctly)
 // - No text after (trailing) → outputs newline only (prevents literal "\" showing)
 export const hard_break = (state, node, parent, index) => {
-  let hasMeaningful = false;
-  const count = parent.childCount;
-  for (let i = index + 1; i < count; i++) {
-    const sibling = parent.child(i);
-    const name = sibling.type.name;
-    if (name === 'text') {
-      if (sibling.text.trim()) { hasMeaningful = true; break; }
-    } else if (name !== 'hard_break') {
-      hasMeaningful = true; break;
+  for (let i = index + 1; i < parent.childCount; i++) {
+    const s = parent.child(i);
+    const name = s.type.name;
+    // Found meaningful content: non-empty text or non-hard_break node
+    if ((name === 'text' && s.text.trim()) || (name !== 'text' && name !== 'hard_break')) {
+      state.write('\\\n');
+      return;
     }
   }
-  state.write(hasMeaningful ? '\\\n' : '\n');
+  state.write('\n');
 };
 export const text = (state, node) => {
   state.text(node.text, false);
