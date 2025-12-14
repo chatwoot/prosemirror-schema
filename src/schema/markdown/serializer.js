@@ -84,6 +84,8 @@ export const paragraph = (state, node, parent, index) => {
   const isEmpty = node.textContent.trim() === '' && node.childCount === 0 && !state.inTable;
   
   if (isEmpty) {
+    // Single empty paragraph (entire document is empty) - output nothing
+    if (parent.childCount === 1) return;
     const hasTextAfter = hasTextContentAfter(parent, index + 1);
     // Don't add backslash for first empty paragraph (index 0) - it's just a cursor placeholder
     const useBackslash = index > 0 && hasTextAfter && !prevEndsWithHardBreak(parent, index);
