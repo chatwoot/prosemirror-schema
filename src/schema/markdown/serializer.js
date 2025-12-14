@@ -79,12 +79,14 @@ export const list_item = (state, node) => {
 // - Empty paragraph + text after + prev not ending with hard_break → outputs "\"
 // - Empty paragraph + no text after → outputs newline only (no backslash)
 // - Empty paragraph after hard_break → outputs newline only (prevents literal "\" showing)
+// - First empty paragraph (index 0) → outputs newline only (cursor placeholder, not intentional content)
 export const paragraph = (state, node, parent, index) => {
   const isEmpty = node.textContent.trim() === '' && node.childCount === 0 && !state.inTable;
   
   if (isEmpty) {
     const hasTextAfter = hasTextContentAfter(parent, index + 1);
-    const useBackslash = hasTextAfter && !prevEndsWithHardBreak(parent, index);
+    // Don't add backslash for first empty paragraph (index 0) - it's just a cursor placeholder
+    const useBackslash = index > 0 && hasTextAfter && !prevEndsWithHardBreak(parent, index);
     state.write(useBackslash ? '\\\n' : '\n');
   } else {
     state.renderInline(node);
