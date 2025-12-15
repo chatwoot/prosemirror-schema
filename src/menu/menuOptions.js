@@ -29,6 +29,21 @@ const imageUploadItem = (nodeType, onImageUpload) =>
     },
   });
 
+const copilotItem = (nodeType, onCopilotClick) => {
+  return new MenuItem({
+    title: "Copilot",
+    icon: icons.sparkles,
+    class: "ProseMirror-copilot",
+    run: () => {
+      onCopilotClick();
+      return true;
+    },
+    enable() {
+      return true;
+    },
+  });
+};
+
 const headerItem = (nodeType, options) => {
   const { level = 1 } = options;
   return new MenuItem({
@@ -101,6 +116,7 @@ const buildMenuOptions = (
       "orderedList",
     ],
     onImageUpload = () => {},
+    onCopilotClick = () => {},
   }
 ) => {
   const availableMenuOptions = {
@@ -115,6 +131,10 @@ const buildMenuOptions = (
     code: markItem(schema.marks.code, {
       title: "Toggle code font",
       icon: icons.code,
+    }),
+    strike: markItem(schema.marks.strike, {
+      title: "Toggle strikethrough",
+      icon: icons.strike,
     }),
     link: linkItem(schema.marks.link),
     bulletList: wrapListItem(schema.nodes.bullet_list, {
@@ -153,6 +173,7 @@ const buildMenuOptions = (
       icon: icons.h3,
     }),
     imageUpload: imageUploadItem(schema.nodes.image, onImageUpload),
+    copilot: copilotItem(schema.nodes.copilot, onCopilotClick),
   };
 
   return [
