@@ -177,10 +177,7 @@ li.ProseMirror-selectednode:after {
   flex-direction: row-reverse;
   align-items: center;
   justify-content: flex-start;
-}
-
-.ProseMirror-prompt-buttons .button--save-link {
-  margin-left: var(--space-smaller);
+  gap: 4px;
 }
 
 #editor,

@@ -1,24 +1,38 @@
-// Checks if any sibling after `start` has text content
-// Used by: paragraph serializer to decide if backslash is needed
-// Edge case: returns false for trailing empty paragraphs (no backslash needed)
-const hasTextAfter = (parent, start) => {
-  const count = parent.childCount;
-  for (let i = start; i < count; i++) {
+// Block elements that handle their own spacing (no backslash needed adjacent to these)
+const BLOCK_TYPES = new Set(['blockquote', 'code_block', 'bullet_list', 'ordered_list', 'heading', 'horizontal_rule']);
+
+// Empty paragraph = user pressed Enter without typing (no text, no children)
+const isEmptyParagraph = node =>
+  node.type.name === 'paragraph' && !node.textContent.trim() && !node.childCount;
+
+// CommonMark list syntax: "* ", "- ", "+ " or "1. ", "1) " (up to 9 digits)
+const isListSyntax = text =>
+  text && /^([*\-+]|\d{1,9}[.)])\s/.test(text.trim());
+
+// Find first non-empty sibling (skips multiple empty paragraphs)
+// dir: 1 = next, -1 = prev | Returns node type name or null
+const findNonEmptySibling = (parent, index, dir) => {
+  for (let i = index + dir; dir > 0 ? i < parent.childCount : i >= 0; i += dir) {
     const child = parent.child(i);
-    if (child.childCount > 0 || child.textContent.trim()) return true;
+    if (!isEmptyParagraph(child)) return child.type.name;
+  }
+  return null;
+};
+
+// True if nearest non-empty sibling (either direction) is a block element
+// Edge case: multiple empty paragraphs before block → all skip backslash
+const adjacentToBlock = (parent, index) =>
+  BLOCK_TYPES.has(findNonEmptySibling(parent, index, 1)) ||
+  BLOCK_TYPES.has(findNonEmptySibling(parent, index, -1));
+
+// True if any sibling after `start` has content (text or children)
+const hasContentAfter = (parent, start) => {
+  for (let i = start; i < parent.childCount; i++) {
+    const child = parent.child(i);
+    if (child.childCount || child.textContent.trim()) return true;
   }
   return false;
 };
-
-// Checks if previous sibling paragraph ends with hard_break
-// Used by: paragraph serializer to avoid double backslash after Shift+Enter + Enter
-const prevEndsWithHardBreak = (parent, index) =>
-  index > 0 && parent.child(index - 1).lastChild?.type.name === 'hard_break';
-
-// Checks if text starts with list syntax (*, -, +, 1., 1), etc.)
-// Used by: hard_break serializer to skip backslash when user types list after Shift+Enter
-const isListSyntax = text =>
-  text && (/^[*\-+]\s/.test(text.trim()) || /^\d{1,9}[.)]\s/.test(text.trim()));
 
 /**
  * Markdown Serializer
@@ -77,18 +91,17 @@ export const list_item = (state, node) => {
   state.renderContent(node);
 };
 
-// Paragraph serializer (handles Enter key)
-// - Empty paragraph + text after + prev not ending with hard_break → outputs "\"
-// - Empty paragraph + no text after → outputs newline only (no backslash)
-// - Empty paragraph after hard_break → outputs newline only (prevents literal "\" showing)
-// - First empty paragraph (index 0) → outputs newline only (cursor placeholder)
+// Paragraph (Enter key)
+// Fixes: Unwanted backslash appearing before blocks or in empty lines
+// - Empty near block (list/blockquote/code) → "\n" (no backslash)
+// - Empty between text → "\\\n" (preserves blank line)
+// - Trailing empty / signature removed → "\n" (no literal "\")
+// - Single empty doc → nothing | In table → normal render
 export const paragraph = (state, node, parent, index) => {
-  const isEmpty = !node.textContent.trim() && !node.childCount && !state.inTable;
-  if (isEmpty) {
-    // Single empty paragraph (entire document is empty) - output nothing
+  if (isEmptyParagraph(node) && !state.inTable) {
     if (parent.childCount === 1) return;
-    const br = index > 0 && hasTextAfter(parent, index + 1) && !prevEndsWithHardBreak(parent, index);
-    state.write(br ? '\\\n' : '\n');
+    if (adjacentToBlock(parent, index)) return state.write('\n');
+    state.write(index > 0 && hasContentAfter(parent, index + 1) ? '\\\n' : '\n');
   } else {
     state.renderInline(node);
     state.closeBlock(node);
@@ -115,18 +128,21 @@ export const image = (state, node) => {
   );
 };
 
-// Hard break serializer (handles Shift+Enter)
-// - Text content after → outputs "\" (markdown line break)
-// - List-like text after (*, -, 1., etc.) → outputs newline only (user typed list syntax)
-// - No text after (trailing) → outputs newline only (prevents literal "\" showing)
+// Hard break (Shift+Enter)
+// Fixes: Backslash only when followed by actual text, not on empty/trailing lines
+// - Text after → "\\\n" (line break works correctly)
+// - List syntax after ("* ", "1. ") → "\n" (user typing list)
+// - Multiple hard_breaks without content → "\n" (no stray backslash)
+// - Trailing / no content after → "\n" (no literal "\" showing)
 export const hard_break = (state, node, parent, index) => {
-  const count = parent.childCount;
-  for (let i = index + 1; i < count; i++) {
+  for (let i = index + 1; i < parent.childCount; i++) {
     const sibling = parent.child(i);
-    const name = sibling.type.name;
-    if (name === 'hard_break' || (name === 'text' && !sibling.text.trim())) continue;
-    if (name === 'text' && isListSyntax(sibling.text)) return state.write('\n');
-    if (name === 'text' ? sibling.text.trim() : name !== 'hard_break') return state.write('\\\n');
+    if (sibling.type.name === 'hard_break') continue;
+    if (sibling.isText) {
+      if (!sibling.text.trim()) continue;
+      return state.write(isListSyntax(sibling.text) ? '\n' : '\\\n');
+    }
+    return state.write('\\\n');
   }
   state.write('\n');
 };
