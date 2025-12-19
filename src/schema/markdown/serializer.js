@@ -1,9 +1,9 @@
-// Checks if any following sibling has text content
-// Used by: paragraph, hard_break serializers to decide if backslash is needed
+// Checks if any sibling after `start` has text content
+// Used by: paragraph serializer to decide if backslash is needed
 // Edge case: returns false for trailing empty paragraphs (no backslash needed)
-const hasTextContentAfter = (parent, startIndex) => {
+const hasTextAfter = (parent, start) => {
   const count = parent.childCount;
-  for (let i = startIndex; i < count; i++) {
+  for (let i = start; i < count; i++) {
     const child = parent.child(i);
     if (child.childCount > 0 || child.textContent.trim()) return true;
   }
@@ -12,11 +12,13 @@ const hasTextContentAfter = (parent, startIndex) => {
 
 // Checks if previous sibling paragraph ends with hard_break
 // Used by: paragraph serializer to avoid double backslash after Shift+Enter + Enter
-const prevEndsWithHardBreak = (parent, index) => {
-  if (index <= 0) return false;
-  const prev = parent.child(index - 1);
-  return prev.childCount > 0 && prev.lastChild.type.name === 'hard_break';
-};
+const prevEndsWithHardBreak = (parent, index) =>
+  index > 0 && parent.child(index - 1).lastChild?.type.name === 'hard_break';
+
+// Checks if text starts with list syntax (*, -, +, 1., 1), etc.)
+// Used by: hard_break serializer to skip backslash when user types list after Shift+Enter
+const isListSyntax = text =>
+  text && (/^[*\-+]\s/.test(text.trim()) || /^\d{1,9}[.)]\s/.test(text.trim()));
 
 /**
  * Markdown Serializer
@@ -79,17 +81,14 @@ export const list_item = (state, node) => {
 // - Empty paragraph + text after + prev not ending with hard_break → outputs "\"
 // - Empty paragraph + no text after → outputs newline only (no backslash)
 // - Empty paragraph after hard_break → outputs newline only (prevents literal "\" showing)
-// - First empty paragraph (index 0) → outputs newline only (cursor placeholder, not intentional content)
+// - First empty paragraph (index 0) → outputs newline only (cursor placeholder)
 export const paragraph = (state, node, parent, index) => {
-  const isEmpty = node.textContent.trim() === '' && node.childCount === 0 && !state.inTable;
-  
+  const isEmpty = !node.textContent.trim() && !node.childCount && !state.inTable;
   if (isEmpty) {
     // Single empty paragraph (entire document is empty) - output nothing
     if (parent.childCount === 1) return;
-    const hasTextAfter = hasTextContentAfter(parent, index + 1);
-    // Don't add backslash for first empty paragraph (index 0) - it's just a cursor placeholder
-    const useBackslash = index > 0 && hasTextAfter && !prevEndsWithHardBreak(parent, index);
-    state.write(useBackslash ? '\\\n' : '\n');
+    const br = index > 0 && hasTextAfter(parent, index + 1) && !prevEndsWithHardBreak(parent, index);
+    state.write(br ? '\\\n' : '\n');
   } else {
     state.renderInline(node);
     state.closeBlock(node);
@@ -115,18 +114,19 @@ export const image = (state, node) => {
       ')'
   );
 };
+
 // Hard break serializer (handles Shift+Enter)
-// - Text content after → outputs "\" (line break works correctly)
+// - Text content after → outputs "\" (markdown line break)
+// - List-like text after (*, -, 1., etc.) → outputs newline only (user typed list syntax)
 // - No text after (trailing) → outputs newline only (prevents literal "\" showing)
 export const hard_break = (state, node, parent, index) => {
-  for (let i = index + 1; i < parent.childCount; i++) {
-    const s = parent.child(i);
-    const name = s.type.name;
-    // Found meaningful content: non-empty text or non-hard_break node
-    if ((name === 'text' && s.text.trim()) || (name !== 'text' && name !== 'hard_break')) {
-      state.write('\\\n');
-      return;
-    }
+  const count = parent.childCount;
+  for (let i = index + 1; i < count; i++) {
+    const sibling = parent.child(i);
+    const name = sibling.type.name;
+    if (name === 'hard_break' || (name === 'text' && !sibling.text.trim())) continue;
+    if (name === 'text' && isListSyntax(sibling.text)) return state.write('\n');
+    if (name === 'text' ? sibling.text.trim() : name !== 'hard_break') return state.write('\\\n');
   }
   state.write('\n');
 };
