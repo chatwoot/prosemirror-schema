@@ -5,8 +5,8 @@ const MARKDOWN_PATTERNS = {
   // CommonMark list markers: "* ", "- ", "+ " or "1. ", "1) " (up to 9 digits)
   list: /^([*\-+]|\d{1,9}[.)])\s/,
   // Block-level markdown syntax that should not be preceded by backslash
-  // Includes: blockquote (>), ATX headings (#), fenced code (``` or ~~~), thematic breaks (---, ***, ___)
-  blockStart: /^(>\s?|#{1,6}\s|```|~~~|[-*_]{3,}$)/,
+  // Includes: blockquote (>), ATX headings (#), fenced code (``` or ~~~), thematic breaks (--, ---, ***, ___)
+  blockStart: /^(>\s?|#{1,6}\s|```|~~~|[-*_]{2,}$)/,
 };
 
 /**
