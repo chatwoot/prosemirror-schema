@@ -1,13 +1,50 @@
 // Block elements that handle their own spacing (no backslash needed adjacent to these)
 const BLOCK_TYPES = new Set(['blockquote', 'code_block', 'bullet_list', 'ordered_list', 'heading', 'horizontal_rule']);
 
-// Empty paragraph = user pressed Enter without typing (no text, no children)
-const isEmptyParagraph = node =>
-  node.type.name === 'paragraph' && !node.textContent.trim() && !node.childCount;
+const MARKDOWN_PATTERNS = {
+  // CommonMark list markers: "* ", "- ", "+ " or "1. ", "1) " (up to 9 digits)
+  list: /^([*\-+]|\d{1,9}[.)])\s/,
+  // Block-level markdown syntax that should not be preceded by backslash
+  // Includes: blockquote (>), ATX headings (#), fenced code (``` or ~~~), thematic breaks (---, ***, ___)
+  blockStart: /^(>\s?|#{1,6}\s|```|~~~|[-*_]{3,}$)/,
+};
 
-// CommonMark list syntax: "* ", "- ", "+ " or "1. ", "1) " (up to 9 digits)
-const isListSyntax = text =>
-  text && /^([*\-+]|\d{1,9}[.)])\s/.test(text.trim());
+/**
+ * Checks if a paragraph node is empty (no visible content).
+ * Empty = no trimmed text AND (no children OR only whitespace text nodes)
+ * Edge cases handled:
+ * - Truly empty: <p></p> → true
+ * - Whitespace only: <p>   </p> → true
+ * - Has image/mention: <p><image/></p> → false (not empty)
+ * - Has text: <p>hello</p> → false (not empty)
+ */
+const isEmptyParagraph = node => {
+  if (node.type.name !== 'paragraph') return false;
+  if (!node.textContent.trim()) {
+    // No visible text - verify it only contains text nodes (not images/mentions/etc.)
+    for (let i = 0; i < node.childCount; i++) {
+      if (!node.child(i).isText) return false;
+    }
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Checks if text starts with markdown syntax that should not be preceded by backslash.
+ * Combines list syntax and block syntax detection for efficiency.
+ * Detects:
+ * - List markers: *, -, +, 1., 2), etc.
+ * - Blockquotes: >
+ * - Headings: #, ##, ###, etc.
+ * - Code fences: ```, ~~~
+ * - Thematic breaks: ---, ***, ___
+ */
+const startsWithMarkdownSyntax = text => {
+  if (!text) return false;
+  const trimmed = text.trim();
+  return MARKDOWN_PATTERNS.list.test(trimmed) || MARKDOWN_PATTERNS.blockStart.test(trimmed);
+};
 
 // Find first non-empty sibling (skips multiple empty paragraphs)
 // dir: 1 = next, -1 = prev | Returns node type name or null
@@ -132,6 +169,7 @@ export const image = (state, node) => {
 // Fixes: Backslash only when followed by actual text, not on empty/trailing lines
 // - Text after → "\\\n" (line break works correctly)
 // - List syntax after ("* ", "1. ") → "\n" (user typing list)
+// - Block syntax after (">", "#", etc.) → "\n" (user typing blockquote/heading)
 // - Multiple hard_breaks without content → "\n" (no stray backslash)
 // - Trailing / no content after → "\n" (no literal "\" showing)
 export const hard_break = (state, node, parent, index) => {
@@ -140,7 +178,7 @@ export const hard_break = (state, node, parent, index) => {
     if (sibling.type.name === 'hard_break') continue;
     if (sibling.isText) {
       if (!sibling.text.trim()) continue;
-      return state.write(isListSyntax(sibling.text) ? '\n' : '\\\n');
+      return state.write(startsWithMarkdownSyntax(sibling.text) ? '\n' : '\\\n');
     }
     return state.write('\\\n');
   }
