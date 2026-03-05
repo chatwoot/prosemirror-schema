@@ -34,19 +34,34 @@ function getValues(fields, domFields) {
 }
 
 export function openPrompt(options) {
-  let wrapper = document.body.appendChild(document.createElement('div'));
+  // Use a native <dialog> element so it renders in the browser's top layer,
+  // automatically appearing above everything including other open dialogs.
+  let dialog = document.createElement('dialog');
+  dialog.className = prefix + '-backdrop';
+
+  // Create the prompt wrapper (the visible dialog box)
+  let wrapper = document.createElement('div');
   wrapper.className = prefix;
+  dialog.appendChild(wrapper);
+
+  document.body.appendChild(dialog);
+  dialog.showModal();
 
   const close = () => {
-    // eslint-disable-next-line no-use-before-define
-    window.removeEventListener('mousedown', mouseOutside);
-    if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    if (dialog.open) dialog.close();
+    if (dialog.parentNode) dialog.parentNode.removeChild(dialog);
   };
 
-  let mouseOutside = e => {
-    if (!wrapper.contains(e.target)) close();
-  };
-  setTimeout(() => window.addEventListener('mousedown', mouseOutside), 50);
+  // Close when clicking the backdrop (outside the wrapper)
+  dialog.addEventListener('mousedown', e => {
+    if (e.target === dialog) close();
+  });
+
+  // Handle native cancel event (e.g. Escape key)
+  dialog.addEventListener('cancel', e => {
+    e.preventDefault();
+    close();
+  });
 
   let domFields = [];
 
@@ -77,10 +92,6 @@ export function openPrompt(options) {
   buttons.appendChild(submitButton);
   buttons.appendChild(document.createTextNode(' '));
   buttons.appendChild(cancelButton);
-
-  let box = wrapper.getBoundingClientRect();
-  wrapper.style.top = (window.innerHeight - box.height) / 2 + 'px';
-  wrapper.style.left = (window.innerWidth - box.width) / 2 + 'px';
 
   let submit = () => {
     let params = getValues(options.fields, domFields);
