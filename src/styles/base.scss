@@ -137,9 +137,20 @@ li.ProseMirror-selectednode:after {
   display: block;
 }
 
+.ProseMirror-prompt-backdrop {
+  border: none;
+  padding: 0;
+  background: transparent;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .ProseMirror-prompt {
-  position: fixed;
-  z-index: 11;
+  position: relative;
   padding: var(--space-normal);
   background: white;
 }
