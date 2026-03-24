@@ -14,6 +14,7 @@ import {
   textFormattingInputRules,
 } from "./rules/index";
 import buildMenuOptions from "./menu/menuOptions";
+import { autoLinkURLs } from "./plugins/autoLink";
 
 export { EditorState, Selection } from "prosemirror-state";
 export { EditorView } from "prosemirror-view";
@@ -42,6 +43,7 @@ export const buildEditor = ({
     blocksInputRule(schema),
     textFormattingInputRules(schema),
     linksInputRules(schema),
+    autoLinkURLs(schema),
     hrInputRules(schema),
     listInputRules(schema),
     dropCursor(),
