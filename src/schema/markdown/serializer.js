@@ -221,7 +221,7 @@ export const link = {
     return isPlainURL(mark, parent, index, -1)
       ? '>'
       : '](' +
-          state.esc(mark.attrs.href) +
+          state.esc(mark.attrs.href).replace(/\)/g, '%29') +
           (mark.attrs.title ? ' ' + state.quote(mark.attrs.title) : '') +
           ')';
   },
