@@ -7,6 +7,8 @@ const MARKDOWN_PATTERNS = {
   // Block-level markdown syntax that should not be preceded by backslash
   // Includes: blockquote (>), ATX headings (#), fenced code (``` or ~~~), thematic breaks (--, ---, ***, ___)
   blockStart: /^(>\s?|#{1,6}\s|```|~~~|[-*_]{2,}$)/,
+  // Markdown table rows: lines starting with "|" (data rows, header rows, separator rows like |---|)
+  tableRow: /^\|/,
 };
 
 /**
@@ -43,7 +45,7 @@ const isEmptyParagraph = node => {
 const startsWithMarkdownSyntax = text => {
   if (!text) return false;
   const trimmed = text.trim();
-  return MARKDOWN_PATTERNS.list.test(trimmed) || MARKDOWN_PATTERNS.blockStart.test(trimmed);
+  return MARKDOWN_PATTERNS.list.test(trimmed) || MARKDOWN_PATTERNS.blockStart.test(trimmed) || MARKDOWN_PATTERNS.tableRow.test(trimmed);
 };
 
 // Find first non-empty sibling (skips multiple empty paragraphs)
