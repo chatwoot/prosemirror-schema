@@ -58,6 +58,10 @@ export const baseNodesMdToPmMapping = {
       };
     },
   },
+  table: { block: 'table' },
+  tr: { block: 'table_row' },
+  th: { block: 'table_header' },
+  td: { block: 'table_cell' },
 };
 
 export const baseMarksMdToPmMapping = {

@@ -107,10 +107,118 @@
       padding: var(--space-normal);
       margin-bottom: var(--space-normal);
     }
+
+    // Table wrapper for horizontal scroll
+    .tableWrapper {
+      overflow-x: auto;
+      margin: var(--space-medium) 0;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th,
+    td {
+      border: 1px solid rgb(var(--border-weak));
+      padding: var(--space-small) var(--space-normal);
+      text-align: start;
+      vertical-align: top;
+      position: relative;
+      min-width: 4rem;
+      background: transparent;
+
+      p {
+        margin: 0;
+      }
+    }
+
+    th {
+      font-weight: var(--font-weight-bold);
+      background: rgb(var(--slate-3));
+    }
+
+    .selectedCell::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgb(var(--blue-5) / 0.5);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    &.resize-cursor {
+      cursor: col-resize;
+    }
   }
 
   .ProseMirror-menubar {
     margin-bottom: var(--space-small);
     padding: var(--space-smaller) 0;
   }
+}
+
+// Table controls — uses Radix CSS vars for dark mode support
+
+.pm-table-add-btn {
+  background: rgb(var(--slate-3));
+  color: rgb(var(--slate-9));
+  &:hover {
+    background: rgb(var(--slate-4));
+    color: rgb(var(--slate-11));
+  }
+}
+
+.pm-table-grip {
+  background: transparent;
+  color: rgb(var(--slate-9));
+  &:hover {
+    background: rgb(var(--slate-4));
+    color: rgb(var(--slate-11));
+  }
+}
+
+.pm-table-menu {
+  background: rgba(var(--alpha-3));
+  border: 0;
+  outline: 1px solid rgba(var(--border-container));
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  min-width: 160px;
+  font-size: 13px;
+  backdrop-filter: blur(16px);
+}
+
+.pm-table-menu-item {
+  display: block;
+  width: 100%;
+  text-align: start;
+  border: none;
+  background: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  border-radius: 4px;
+  color: rgb(var(--slate-12));
+
+  &:hover {
+    background: rgb(var(--slate-3));
+  }
+
+  &--danger {
+    color: rgb(var(--ruby-11));
+    &:hover {
+      background: rgb(var(--ruby-3));
+    }
+  }
+}
+
+.pm-table-menu-separator {
+  height: 1px;
+  background: rgb(var(--slate-6));
+  margin: 4px 0;
 }
