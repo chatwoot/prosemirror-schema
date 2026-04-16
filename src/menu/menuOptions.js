@@ -102,6 +102,54 @@ const linkItem = (markType) =>
     },
   });
 
+const isInsideTable = (state, schema) => {
+  const { $from } = state.selection;
+  for (let d = $from.depth; d > 0; d--) {
+    if ($from.node(d).type === schema.nodes.table) return true;
+  }
+  return false;
+};
+
+const insertTableItem = (schema) =>
+  new MenuItem({
+    title: "Insert table",
+    icon: icons.table,
+    enable(state) {
+      if (!schema.nodes.table) return false;
+      return !isInsideTable(state, schema);
+    },
+    run(state, dispatch) {
+      const { table, table_row, table_header, table_cell, paragraph } =
+        schema.nodes;
+      const headerCells = [0, 1, 2].map(() =>
+        table_header.createAndFill(null, paragraph.create())
+      );
+      const dataCells = [0, 1, 2].map(() =>
+        table_cell.createAndFill(null, paragraph.create())
+      );
+      const headerRow = table_row.create(null, headerCells);
+      const dataRow = table_row.create(null, dataCells);
+      const tableNode = table.create(null, [headerRow, dataRow]);
+      dispatch(state.tr.replaceSelectionWith(tableNode).scrollIntoView());
+      return true;
+    },
+  });
+
+// Items that should be hidden when selection is inside a table
+const HIDE_IN_TABLE = new Set([
+  'bulletList', 'orderedList', 'h1', 'h2', 'h3',
+  'imageUpload', 'code', 'insertTable', 'strike', 'copilot',
+]);
+
+// Wrap a MenuItem so it's hidden (select → false) when inside a table
+const hideInTable = (key, item, schema) => {
+  if (!item || !schema.nodes.table || !HIDE_IN_TABLE.has(key)) return item;
+  return new MenuItem({
+    ...item.spec,
+    select: (state) => !isInsideTable(state, schema),
+  });
+};
+
 const buildMenuOptions = (
   schema,
   {
@@ -173,13 +221,14 @@ const buildMenuOptions = (
       icon: icons.h3,
     }),
     imageUpload: imageUploadItem(schema.nodes.image, onImageUpload),
+    insertTable: schema.nodes.table ? insertTableItem(schema) : null,
     copilot: copilotItem(schema.nodes.copilot, onCopilotClick),
   };
 
   return [
     enabledMenuOptions
       .filter((menuOptionKey) => !!availableMenuOptions[menuOptionKey])
-      .map((menuOptionKey) => availableMenuOptions[menuOptionKey]),
+      .map((key) => hideInTable(key, availableMenuOptions[key], schema)),
   ];
 };
 

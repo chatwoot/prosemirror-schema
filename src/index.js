@@ -3,6 +3,7 @@ import { Plugin } from "prosemirror-state";
 import { dropCursor } from "prosemirror-dropcursor";
 import { gapCursor } from "prosemirror-gapcursor";
 import { menuBar } from "prosemirror-menu";
+import { tableEditing } from "prosemirror-tables";
 
 import Placeholder from "./Placeholder";
 import {
@@ -15,6 +16,7 @@ import {
 } from "./rules/index";
 import buildMenuOptions from "./menu/menuOptions";
 import { autoLinkURLs } from "./plugins/autoLink";
+import { tableControlsPlugin } from "./plugins/table";
 
 export { EditorState, Selection } from "prosemirror-state";
 export { EditorView } from "prosemirror-view";
@@ -48,6 +50,8 @@ export const buildEditor = ({
     listInputRules(schema),
     dropCursor(),
     gapCursor(),
+    schema.nodes.table ? tableEditing() : null,
+    schema.nodes.table ? tableControlsPlugin(schema) : null,
     Placeholder(placeholder),
     menuBar({
       floating: true,

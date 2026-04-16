@@ -1,5 +1,5 @@
 // Block elements that handle their own spacing (no backslash needed adjacent to these)
-const BLOCK_TYPES = new Set(['blockquote', 'code_block', 'bullet_list', 'ordered_list', 'heading', 'horizontal_rule']);
+const BLOCK_TYPES = new Set(['blockquote', 'code_block', 'bullet_list', 'ordered_list', 'heading', 'horizontal_rule', 'table']);
 
 const MARKDOWN_PATTERNS = {
   // CommonMark list markers: "* ", "- ", "+ " or "1. ", "1) " (up to 9 digits)
@@ -189,6 +189,92 @@ export const hard_break = (state, node, parent, index) => {
 export const text = (state, node) => {
   state.text(node.text, false);
 };
+
+// Simple mark wrappers for table cell serialization.
+// Avoids calling mark open/close functions which expect specific parent/index args.
+const MARK_WRAPPERS = {
+  strong: ['**', '**'],
+  em: ['*', '*'],
+  code: ['`', '`'],
+  strike: ['~~', '~~'],
+  superscript: ['^', '^'],
+  link: null, // handled specially
+};
+
+// Serialize cell inline content to a markdown string (preserves marks)
+function serializeCellContent(state, cell) {
+  const parts = [];
+  cell.forEach(block => {
+    if (block.type.name === 'paragraph') {
+      block.forEach(child => {
+        let t = child.text || '';
+        if (child.marks) {
+          child.marks.forEach(mark => {
+            const wrapper = MARK_WRAPPERS[mark.type.name];
+            if (wrapper) {
+              t = wrapper[0] + t + wrapper[1];
+            } else if (mark.type.name === 'link' && mark.attrs.href) {
+              t = '[' + t + '](' + mark.attrs.href + ')';
+            }
+          });
+        }
+        parts.push(t);
+      });
+    }
+  });
+  return parts.join('');
+}
+
+// Table node → markdown table with aligned columns
+export const table = (state, node) => {
+  const rows = [];
+  node.forEach(row => rows.push(row));
+  if (rows.length === 0) return;
+
+  const colCount = rows[0].childCount;
+
+  // Calculate column widths for alignment
+  const colWidths = new Array(colCount).fill(3);
+  rows.forEach(row => {
+    for (let c = 0; c < row.childCount; c++) {
+      const text = serializeCellContent(state, row.child(c));
+      colWidths[c] = Math.max(colWidths[c], text.length);
+    }
+  });
+
+  const renderRow = row => {
+    const cells = [];
+    for (let c = 0; c < row.childCount; c++) {
+      const text = serializeCellContent(state, row.child(c));
+      cells.push(' ' + text.padEnd(colWidths[c]) + ' ');
+    }
+    state.write('|' + cells.join('|') + '|\n');
+  };
+
+  // First row
+  renderRow(rows[0]);
+
+  // Separator after header
+  const isHeader = rows[0].childCount > 0 &&
+    rows[0].child(0).type.name === 'table_header';
+  if (isHeader) {
+    const sep = colWidths.map(w => ' ' + '-'.repeat(w) + ' ');
+    state.write('|' + sep.join('|') + '|\n');
+  }
+
+  // Remaining rows
+  for (let i = 1; i < rows.length; i++) {
+    renderRow(rows[i]);
+  }
+
+  state.closeBlock(node);
+};
+
+// These are handled by the table serializer above, but prosemirror-markdown
+// requires every node type to have an entry
+export const table_row = () => {};
+export const table_cell = () => {};
+export const table_header = () => {};
 
 export const em = {
   open: '*',
