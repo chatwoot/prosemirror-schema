@@ -108,6 +108,63 @@
       margin-bottom: var(--space-normal);
     }
 
+    // Image resize wrapper + diagonal handle (bottom-right corner)
+    .pm-image-wrapper {
+      position: relative;
+      display: inline-block;
+      line-height: 0;
+      max-width: 100%;
+
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .pm-image-resize-handle {
+        position: absolute;
+        inset-inline-end: 8px;
+        bottom: 8px;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.65);
+        color: #fff;
+        border-radius: 6px;
+        cursor: nwse-resize;
+        opacity: 0;
+        transition: opacity 0.12s ease-in-out, background 0.12s ease-in-out;
+        z-index: 2;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+
+        svg {
+          width: 12px;
+          height: 12px;
+          pointer-events: none;
+
+          [dir="rtl"] & {
+            transform: scaleX(-1);
+          }
+        }
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.8);
+        }
+      }
+
+      &:hover .pm-image-resize-handle,
+      &.ProseMirror-selectednode .pm-image-resize-handle {
+        opacity: 1;
+      }
+
+      &.ProseMirror-selectednode {
+        outline: 2px solid rgb(var(--blue-9));
+        outline-offset: 1px;
+      }
+    }
+
     // Table wrapper for horizontal scroll
     .tableWrapper {
       overflow-x: auto;

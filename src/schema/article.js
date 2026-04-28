@@ -2,6 +2,7 @@ import { orderedList, bulletList, listItem } from 'prosemirror-schema-list';
 import { tableNodes } from 'prosemirror-tables';
 import { Schema } from 'prosemirror-model';
 import { schema } from 'prosemirror-markdown';
+import { imageWithHeight } from './imageWithHeight';
 
 const tableNodeSpecs = tableNodes({
   tableGroup: 'block',
@@ -24,7 +25,7 @@ export const fullSchema = new Schema({
     heading: schema.spec.nodes.get('heading'),
     code_block: schema.spec.nodes.get('code_block'),
     text: schema.spec.nodes.get('text'),
-    image: schema.spec.nodes.get('image'),
+    image: imageWithHeight(schema),
     hard_break: schema.spec.nodes.get('hard_break'),
     ordered_list: Object.assign(orderedList, {
       content: 'list_item+',
