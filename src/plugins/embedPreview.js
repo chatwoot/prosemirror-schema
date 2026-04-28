@@ -42,6 +42,15 @@ const buildEmbedWidget = html => () => {
   wrapper.className = "cw-embed-preview";
   wrapper.contentEditable = "false";
   wrapper.innerHTML = html;
+  // innerHTML doesn't execute <script> tags — re-create them so they do.
+  wrapper.querySelectorAll("script").forEach(stale => {
+    const fresh = document.createElement("script");
+    Array.from(stale.attributes).forEach(({ name, value }) =>
+      fresh.setAttribute(name, value)
+    );
+    fresh.textContent = stale.textContent;
+    stale.replaceWith(fresh);
+  });
   return wrapper;
 };
 
