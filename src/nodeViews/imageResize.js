@@ -1,14 +1,7 @@
 const MIN = 100;
 
 // Diagonal-resize icon: two opposing corner brackets + connecting line.
-const HANDLE_SVG =
-  '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" ' +
-  'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
-  'aria-hidden="true">' +
-  '<path d="M2 6 V2 H6"/>' +
-  '<path d="M12 8 V12 H8"/>' +
-  '<path d="M2 2 L12 12"/>' +
-  '</svg>';
+const HANDLE_SVG = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6 V2 H6"/><path d="M12 8 V12 H8"/><path d="M2 2 L12 12"/></svg>`;
 
 class ImageResizeView {
   constructor(node, view, getPos) {
