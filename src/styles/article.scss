@@ -108,6 +108,43 @@
       margin-bottom: var(--space-normal);
     }
 
+    // Image resize wrapper + diagonal handle (bottom-right corner)
+    .pm-image-wrapper {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      line-height: 0;
+
+      img { display: block; max-width: 100%; height: auto; }
+
+      .pm-image-resize-handle {
+        position: absolute;
+        inset-inline-end: 8px;
+        bottom: 8px;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.65);
+        border-radius: 6px;
+        cursor: nwse-resize;
+        opacity: 0;
+        transition: opacity 0.12s, background 0.12s;
+
+        svg { width: 12px; height: 12px; pointer-events: none; }
+        &:hover { background: rgba(0, 0, 0, 0.8); }
+
+        [dir="rtl"] & {
+          cursor: nesw-resize;
+          svg { transform: scaleX(-1); }
+        }
+      }
+
+      &:hover .pm-image-resize-handle,
+      &.ProseMirror-selectednode .pm-image-resize-handle { opacity: 1; }
+    }
+
     // Table wrapper for horizontal scroll
     .tableWrapper {
       overflow-x: auto;
