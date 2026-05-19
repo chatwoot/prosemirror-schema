@@ -1,4 +1,4 @@
-const MIN = 100;
+const MIN_PX = 100;
 
 // Diagonal-resize icon: two opposing corner brackets + connecting line.
 const HANDLE_SVG = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6 V2 H6"/><path d="M12 8 V12 H8"/><path d="M2 2 L12 12"/></svg>`;
@@ -27,33 +27,38 @@ class ImageResizeView {
   }
 
   syncImg() {
-    const { src, alt, title, height } = this.node.attrs;
+    const { src, alt, title, width } = this.node.attrs;
     this.img.src = src;
     this.img.alt = alt || '';
     this.img.title = title || '';
-    this.img.style.height = height || '';
+    this.dom.style.width = width || '';
   }
 
   onMouseDown = event => {
     event.preventDefault();
-    const startH = this.img.getBoundingClientRect().height || MIN;
+    const containerWidth = this.dom.parentElement?.clientWidth;
+    if (!containerWidth) return;
+    const startW = this.dom.getBoundingClientRect().width;
+    const startX = event.clientX;
     const startY = event.clientY;
     let moved = false;
+    let widthPx = 0;
 
     const onMove = e => {
       moved = true;
-      this.img.style.height = `${Math.max(MIN, Math.round(startH + e.clientY - startY))}px`;
+      const px = startW + (e.clientX - startX) + (e.clientY - startY);
+      widthPx = Math.max(MIN_PX, Math.min(containerWidth, Math.round(px)));
+      this.dom.style.width = `${widthPx}px`;
     };
 
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       if (!moved) return;
-      const h = parseInt(this.img.style.height, 10);
       const pos = this.getPos();
-      if (!Number.isFinite(h) || pos == null) return;
+      if (pos == null) return;
       this.view.dispatch(
-        this.view.state.tr.setNodeMarkup(pos, null, { ...this.node.attrs, height: `${h}px` })
+        this.view.state.tr.setNodeMarkup(pos, null, { ...this.node.attrs, width: `${widthPx}px` })
       );
     };
 

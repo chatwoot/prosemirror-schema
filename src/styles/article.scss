@@ -116,6 +116,9 @@
       line-height: 0;
 
       img { display: block; max-width: 100%; height: auto; }
+      // Once the user has resized (wrapper has an inline width), force the img
+      // to fill the wrapper so the corner handle stays anchored to its edge.
+      &[style*="width"] img { width: 100%; }
 
       .pm-image-resize-handle {
         position: absolute;

@@ -146,17 +146,26 @@ export const paragraph = (state, node, parent, index) => {
     state.closeBlock(node);
   }
 };
-const setHeightParam = (src, height) => {
-  const param = `cw_image_height=${height}`;
-  if (src.includes('cw_image_height=')) {
-    return src.replace(/cw_image_height=[^&]+/, param);
-  }
-  return `${src}${src.includes('?') ? '&' : '?'}${param}`;
-};
-
 export const image = (state, node) => {
   let src = state.esc(node.attrs.src);
-  if (node.attrs.height) src = setHeightParam(src, node.attrs.height);
+  if (node.attrs.height) {
+    const param = `cw_image_height=${node.attrs.height}`;
+    if (src.includes('?')) {
+      src = src.includes('cw_image_height=') ?
+        src.replace(/cw_image_height=[^&]+/, param) : `${src}&${param}`;
+    } else {
+      src += `?${param}`;
+    }
+  }
+  if (node.attrs.width) {
+    const param = `cw_image_width=${node.attrs.width}`;
+    if (src.includes('?')) {
+      src = src.includes('cw_image_width=') ?
+        src.replace(/cw_image_width=[^&]+/, param) : `${src}&${param}`;
+    } else {
+      src += `?${param}`;
+    }
+  }
   state.write(
     '![' +
       state.esc(node.attrs.alt || '') +
