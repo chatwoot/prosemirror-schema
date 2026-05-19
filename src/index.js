@@ -31,6 +31,8 @@ export { fullSchema } from "./schema/article";
 export { messageSchema } from "./schema/message";
 export { buildMessageSchema } from "./schema/schemaBuilder";
 
+export { imageResizeView } from "./nodeViews/imageResize";
+
 export const buildEditor = ({
   schema,
   placeholder,

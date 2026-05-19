@@ -50,11 +50,13 @@ export const baseNodesMdToPmMapping = {
     getAttrs: (tok) => {
       const src = tok.attrGet('src');
       const heightMatch = src.match(/cw_image_height=(\d+)px/);
+      const widthMatch = src && src.match(/cw_image_width=(\d+)px/);
       return {
         src,
         title: tok.attrGet('title') || null,
         alt: (tok.children[0] && tok.children[0].content) || null,
-        height: heightMatch ? `${heightMatch[1]}px` : null
+        height: heightMatch ? `${heightMatch[1]}px` : null,
+        width: widthMatch ? `${widthMatch[1]}px` : null,
       };
     },
   },

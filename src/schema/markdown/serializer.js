@@ -151,8 +151,17 @@ export const image = (state, node) => {
   if (node.attrs.height) {
     const param = `cw_image_height=${node.attrs.height}`;
     if (src.includes('?')) {
-      src = src.includes('cw_image_height=') ? 
+      src = src.includes('cw_image_height=') ?
         src.replace(/cw_image_height=[^&]+/, param) : `${src}&${param}`;
+    } else {
+      src += `?${param}`;
+    }
+  }
+  if (node.attrs.width) {
+    const param = `cw_image_width=${node.attrs.width}`;
+    if (src.includes('?')) {
+      src = src.includes('cw_image_width=') ?
+        src.replace(/cw_image_width=[^&]+/, param) : `${src}&${param}`;
     } else {
       src += `?${param}`;
     }
