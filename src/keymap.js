@@ -46,6 +46,28 @@ import { keymap } from 'prosemirror-keymap';
 const mac =
   typeof navigator !== 'undefined' ? /Mac/.test(navigator.platform) : false;
 
+// A paragraph whose only content is an image.
+const isImageParagraph = node =>
+  !!node &&
+  node.type.name === 'paragraph' &&
+  node.childCount === 1 &&
+  node.firstChild.type.name === 'image';
+
+// Backspace at the start of a line whose previous block is an image-only
+// paragraph clears that image. The image-isolation plugin keeps images alone on
+// their line, which would otherwise make the default join a silent no-op.
+function deleteImageBackward(state, dispatch) {
+  const { $cursor } = state.selection;
+  if (!$cursor || $cursor.parentOffset !== 0) return false;
+  const prev = state.doc.resolve($cursor.before()).nodeBefore;
+  if (!isImageParagraph(prev)) return false;
+  if (dispatch) {
+    const to = $cursor.before();
+    dispatch(state.tr.delete(to - prev.nodeSize, to).scrollIntoView());
+  }
+  return true;
+}
+
 // Find the table node at the given depth from $from, or -1
 function findTableDepth($from, tableType) {
   for (let d = $from.depth; d > 0; d--) {
@@ -71,13 +93,18 @@ export function baseKeyMaps(schema) {
 
   bind('Mod-z', chainCommands(undoInputRule, undo));
   bind('Shift-Mod-z', redo);
-  const backspaceComands = chainCommands(
+  const backspaceList = [
     undoInputRule,
     cleanUpAtTheStartOfDocument,
     deleteSelection,
     joinBackward,
-    selectNodeBackward
-  );
+    selectNodeBackward,
+  ];
+  // Message editors (image, no table): let Backspace clear an image above.
+  if (schema.nodes.image && !schema.nodes.table) {
+    backspaceList.unshift(deleteImageBackward);
+  }
+  const backspaceComands = chainCommands(...backspaceList);
   bind('Backspace', backspaceComands);
   bind('Mod-Backspace', backspaceComands);
 
@@ -288,7 +315,7 @@ export function baseKeyMaps(schema) {
     // Currently Mod+enter command is never reached as it is overridden at the editor
     //  side with Cmd+Enter for sending messages.
     // Fix this by using a different keymap or overriding existing keymap on condition.
-    
+
     enterCommands.unshift(splitListItem(schema.nodes.list_item));
 
     if (schema.nodes.table) {
