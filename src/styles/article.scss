@@ -15,64 +15,92 @@
   }
 
   .ProseMirror {
-    p {
-      font-size: var(--font-size-medium);
-      line-height: 1.75rem;
-      margin-bottom: var(--space-medium);
-    }
+    font-size: var(--font-size-default); // 16px
+    line-height: 1.75;
 
-    strong code {
-      font-size: var(--font-size-medium);
+    p {
+      font-size: var(--font-size-default);
+      margin-top: 20px; // 1.25em — no matching --space-* var
+      margin-bottom: 20px;
     }
 
     pre code {
-      font-size: var(--font-size-default);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.6;
+      font-size: inherit;
+      font-weight: inherit;
+      line-height: inherit;
     }
 
     blockquote {
-      padding-left: var(--space-normal);
-      margin: var(--space-medium) 0;
+      margin-top: 25.6px; // 1.6em — matches prose default
+      margin-bottom: 25.6px;
+      padding-inline-start: var(--space-normal);
+      font-style: italic;
     }
 
     a {
       font-weight: var(--font-weight-medium);
-      font-size: var(--font-size-medium);
+      font-size: var(--font-size-default);
     }
 
     hr {
       border-color: var(--s-100);
-      margin-bottom: var(--space-big);
+      margin-top: var(--space-larger); // 48px (~3em from prose default)
+      margin-bottom: var(--space-larger);
     }
 
     h1 {
-      font-size: var(--font-size-big);
-      font-weight: var(--font-weight-heavy);
-      margin-bottom: var(--space-medium);
+      font-size: 36px; // 2.25em (prose default; no matching --font-size-* var)
+      font-weight: 620;
+      line-height: 1.1111111;
+      margin-top: 0;
+      margin-bottom: var(--space-large); // 32px
     }
 
     h2 {
-      font-size: var(--font-size-large);
-      font-weight: var(--font-weight-black);
-      margin-bottom: var(--space-medium);
+      font-size: var(--font-size-big); // 24px (1.5em)
+      font-weight: 620;
+      line-height: 1.3333333;
+      margin-top: var(--space-large); // 32px (2em)
+      margin-bottom: var(--space-normal); // 16px (1em)
     }
 
-    h3,
+    h3 {
+      font-size: var(--font-size-large); // 20px (1.25em)
+      font-weight: 620;
+      line-height: 1.6;
+      margin-top: var(--space-medium); // 24px (~1.6em)
+      margin-bottom: var(--space-slab); // 12px (0.6em)
+    }
+
     h4 {
-      font-size: var(--font-size-medium);
-      font-weight: var(--font-weight-bold);
-      margin-bottom: var(--space-normal);
+      font-size: var(--font-size-default); // 16px
+      font-weight: 620;
+      line-height: 1.5;
+      margin-top: var(--space-medium); // 24px (1.5em)
+      margin-bottom: var(--space-small); // 8px (0.5em)
     }
 
     h5 {
-      font-size: var(--font-size-medium);
+      font-size: var(--font-size-default);
+      font-weight: 620;
+      margin-top: var(--space-normal);
       margin-bottom: var(--space-small);
     }
 
     h6 {
-      font-size: var(--font-size-medium);
+      font-size: var(--font-size-default);
+      font-weight: 620;
+      margin-top: var(--space-normal);
       margin-bottom: var(--space-smaller);
+    }
+
+    // Reset spacing on the first child so the editor doesn't start with a gap.
+    > :first-child {
+      margin-top: 0;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
     }
 
     .ProseMirror-icon svg {
@@ -80,32 +108,53 @@
     }
 
     li::marker {
-      font-size: var(--font-size-medium);
+      font-size: var(--font-size-default);
     }
 
     ul,
     ol {
-      margin-top: var(--space-medium);
-      margin-bottom: var(--space-medium);
-      padding-left: var(--space-large);
+      margin-top: 20px;
+      margin-bottom: 20px;
+      padding-inline-start: 26px; // 1.625em from prose default
     }
 
+    ul, ul ul, ul ul ul { list-style-type: disc; }
+    ol, ol ol, ol ol ol { list-style-type: decimal; }
+
     li {
-      ul,
-      ol {
-        margin-top: var(--space-normal);
-        margin-bottom: var(--space-normal);
-      }
-      p {
-        padding-left: var(--space-medium);
-        margin-top: var(--space-small);
-        margin-bottom: var(--space-small);
-      }
+      margin-top: var(--space-small); // 8px (0.5em)
+      margin-bottom: var(--space-small);
+      padding-inline-start: 6px; // 0.375em
+    }
+
+    // Nested lists get tighter vertical rhythm matching prose default.
+    ul ul,
+    ul ol,
+    ol ul,
+    ol ol {
+      margin-top: var(--space-slab); // 12px (0.75em)
+      margin-bottom: var(--space-slab);
+    }
+
+    // Portal collapses li > p margins (`[&_li>p]:m-0`). Mirror that here.
+    li > p {
+      margin-top: 0;
+      margin-bottom: 0;
     }
 
     pre {
-      padding: var(--space-normal);
-      margin-bottom: var(--space-normal);
+      font-size: var(--font-size-small); // 14px (0.875em)
+      line-height: 1.7142857;
+      margin-top: var(--space-medium); // 24px (~1.71em)
+      margin-bottom: var(--space-medium);
+      padding: var(--space-slab) var(--space-normal); // ~12px 16px
+      border-radius: var(--border-radius-medium);
+    }
+
+    p code,
+    li code,
+    strong code {
+      font-size: var(--font-size-small); // 14px (0.875em)
     }
 
 

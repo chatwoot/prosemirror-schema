@@ -7,6 +7,7 @@ import {
   baseMarksMdToPmMapping,
   filterMdToPmSchemaMapping,
 } from './parser';
+import { isolateImagesInDoc } from '../../plugins/isolateImages';
 
 export const articleSchemaToMdMapping = {
   nodes: {
@@ -101,6 +102,8 @@ export class ArticleMarkdownTransformer {
   }
 
   parse(content) {
-    return this.markdownParser.parse(content);
+    // Isolate images the same way the live editor does (isolateImagesPlugin),
+    // so a parse → serialize round-trip matches the editor's output.
+    return isolateImagesInDoc(this.markdownParser.parse(content));
   }
 }
