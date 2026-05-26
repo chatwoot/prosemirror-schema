@@ -55,8 +55,8 @@ export const buildEditor = ({
     gapCursor(),
     schema.nodes.table ? tableEditing() : null,
     schema.nodes.table ? tableControlsPlugin(schema) : null,
-    // Message editors (image, no table): keep each image alone on its line.
-    schema.nodes.image && !schema.nodes.table ? isolateImagesPlugin() : null,
+    // editor with images (messages and articles): keep each image alone on its line.
+    schema.nodes.image ? isolateImagesPlugin() : null,
     Placeholder(placeholder),
     menuBar({
       floating: true,
