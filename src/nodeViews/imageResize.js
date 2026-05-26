@@ -38,6 +38,11 @@ class ImageResizeView {
     event.preventDefault();
     const containerWidth = this.dom.parentElement?.clientWidth;
     if (!containerWidth) return;
+    // In RTL the handle sits on the bottom-LEFT corner (via inset-inline-end),
+    // so outward motion is a NEGATIVE clientX delta. Flip the X contribution
+    // so dragging in the direction the icon points always grows the image.
+    const isRtl = getComputedStyle(this.dom).direction === 'rtl';
+    const xSign = isRtl ? -1 : 1;
     const startW = this.dom.getBoundingClientRect().width;
     const startX = event.clientX;
     const startY = event.clientY;
@@ -46,7 +51,7 @@ class ImageResizeView {
 
     const onMove = e => {
       moved = true;
-      const px = startW + (e.clientX - startX) + (e.clientY - startY);
+      const px = startW + xSign * (e.clientX - startX) + (e.clientY - startY);
       widthPx = Math.max(MIN_PX, Math.min(containerWidth, Math.round(px)));
       this.dom.style.width = `${widthPx}px`;
     };
