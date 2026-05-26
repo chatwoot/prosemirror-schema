@@ -282,6 +282,13 @@ li.ProseMirror-selectednode:after {
     cursor: text;
   }
 
+  // An image sits alone in its paragraph, so ProseMirror adds a trailing <br>
+  // for the caret; with the 1.4 line-height that renders a blank line below the
+  // image. Collapse it so the image sits flush (the image keeps its own height).
+  p:has(> .pm-image-wrapper) {
+    line-height: 0;
+  }
+
   // Image resize wrapper + diagonal handle (bottom-right corner). Shared by
   // every editor variant that registers the imageResizeView NodeView.
   .pm-image-wrapper {
@@ -294,6 +301,9 @@ li.ProseMirror-selectednode:after {
     // Once the user has resized (wrapper has an inline width), force the img
     // to fill the wrapper so the corner handle stays anchored to its edge.
     &[style*="width"] img { width: 100%; }
+
+    // Subtle light-blue outline on hover so the image's edges
+    &:hover { outline: 2px solid rgba(59, 130, 246, 0.5); outline-offset: -2px; }
 
     .pm-image-resize-handle {
       position: absolute;
