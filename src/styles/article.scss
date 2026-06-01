@@ -179,7 +179,8 @@
       text-align: start;
       vertical-align: top;
       position: relative;
-      min-width: 3rem;
+      // 50px == columnResizing({ cellMinWidth: 50 }) and the backend renderer's floor.
+      min-width: 3.125rem;
       background: transparent;
       box-sizing: border-box;
 
@@ -191,7 +192,7 @@
     .column-resize-handle {
       position: absolute;
       top: 0;
-      right: -2px;
+      inset-inline-end: -2px;
       bottom: 0;
       width: 4px;
       background: rgb(var(--blue-9));

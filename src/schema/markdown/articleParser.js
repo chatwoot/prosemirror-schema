@@ -58,7 +58,12 @@ md.enable([
 // 3. Pull `<!--cw-colwidths:...-->` markers out of the source and re-apply the
 //    widths to each table's first-row cells (so columnResizing widths survive
 //    a markdown round-trip).
-const COLWIDTHS_MARKER = /^[ \t]*<!--cw-colwidths:([\d,]+)-->[ \t]*\r?\n/gm;
+const COLWIDTHS_MARKER = /^[ \t]*<!--cw-colwidths:([\d,]+)-->[ \t]*\r?$/;
+const FENCE = /^[ \t]*(```|~~~)/;
+// A markdown table is detected by its delimiter row (`| --- | --- |`). Requiring a
+// pipe keeps thematic breaks (`---`) from being miscounted as tables.
+const isTableDelimiter = line =>
+  line.includes('|') && line.includes('-') && /^[\s|:-]+$/.test(line);
 const paragraphToken = nesting => ({
   type: nesting > 0 ? 'paragraph_open' : 'paragraph_close',
   tag: 'p',
@@ -67,20 +72,31 @@ const paragraphToken = nesting => ({
   content: '',
 });
 
-// Strip every `<!--cw-colwidths:...-->` line out of the source; return the cleaned
-// source plus an ordered queue (one int[] per table) for re-application.
+// Strip every `<!--cw-colwidths:...-->` line and map its widths to the table that
+// follows it, keyed by table position so width-less tables don't shift the mapping.
 const extractColwidths = src => {
-  const queue = [];
-  const cleaned = src.replace(COLWIDTHS_MARKER, (_match, widths) => {
-    queue.push(widths.split(',').map(w => parseInt(w, 10) || 0));
-    return '';
-  });
-  return [cleaned, queue];
+  const widthsByTable = {};
+  let tableCount = 0;
+  let inFence = false;
+  const kept = [];
+  for (const line of src.split('\n')) {
+    if (FENCE.test(line)) inFence = !inFence;
+    if (!inFence) {
+      const marker = line.match(COLWIDTHS_MARKER);
+      if (marker) {
+        widthsByTable[tableCount] = marker[1].split(',').map(w => parseInt(w, 10) || 0);
+        continue;
+      }
+      if (isTableDelimiter(line)) tableCount += 1;
+    }
+    kept.push(line);
+  }
+  return [kept.join('\n'), widthsByTable];
 };
 
 const originalParse = md.parse.bind(md);
 md.parse = (src, env) => {
-  const [cleanedSrc, colwidthsQueue] = extractColwidths(src);
+  const [cleanedSrc, colwidthsByTable] = extractColwidths(src);
   const tokens = originalParse(cleanedSrc, env);
 
   const result = [];
@@ -97,7 +113,7 @@ md.parse = (src, env) => {
       case 'tbody_close':
         break;
       case 'table_open':
-        widths = colwidthsQueue[tableIdx] || null;
+        widths = colwidthsByTable[tableIdx] || null;
         tableIdx += 1;
         inFirstRow = false;
         result.push(t);

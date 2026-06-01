@@ -66,13 +66,11 @@ export const baseNodesMdToPmMapping = {
   td: { block: 'table_cell', getAttrs: cellColwidthAttrs },
 };
 
-// Read the `data-colwidth` attribute applied by the article parser onto th/td tokens
-// and turn it into the colwidth attr shape that prosemirror-tables expects.
+// Read the single `data-colwidth` the article parser sets on a th/td token and
+// turn it into the colwidth attr shape that prosemirror-tables expects.
 function cellColwidthAttrs(tok) {
-  const raw = tok.attrGet && tok.attrGet('data-colwidth');
-  if (!raw) return {};
-  const widths = raw.split(',').map(n => parseInt(n, 10)).filter(n => n > 0);
-  return widths.length ? { colwidth: widths } : {};
+  const width = tok.attrGet ? parseInt(tok.attrGet('data-colwidth'), 10) : NaN;
+  return width > 0 ? { colwidth: [width] } : {};
 }
 
 export const baseMarksMdToPmMapping = {

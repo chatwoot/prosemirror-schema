@@ -8,6 +8,7 @@ import {
   deleteRow,
   deleteTable,
   CellSelection,
+  columnResizingPluginKey,
 } from "prosemirror-tables";
 
 // ── Helpers ──
@@ -19,6 +20,12 @@ const GRIP_SVG =
 
 const isRTL = (el) =>
   getComputedStyle(el || document.documentElement).direction === "rtl";
+
+// True while a column is actively being drag-resized (columnResizing plugin).
+const isResizing = (view) => {
+  const state = columnResizingPluginKey.getState(view.state);
+  return !!(state && state.dragging);
+};
 
 // ── Table Controls Plugin ──
 // + buttons (add row/col at end) + grip handles with dropdown menus
@@ -170,26 +177,38 @@ export function tableControlsPlugin(schema) {
     return editorView.dom.getBoundingClientRect();
   };
 
+  // Horizontal extent of the table that is actually on screen: the table's own
+  // edges, clamped to the scroll container. So controls hug a narrow table's edge,
+  // yet stay at the visible edge when a wide table is scrolled inside the wrapper.
+  const getVisibleTableX = () => {
+    const vr = getVisibleBounds();
+    if (!vr || !currentTableEl) return null;
+    const tr = currentTableEl.getBoundingClientRect();
+    const left = Math.max(tr.left, vr.left);
+    const right = Math.min(tr.right, vr.right);
+    return { left, right, width: Math.max(0, right - left) };
+  };
+
   const positionAddButtons = () => {
     if (!currentTableEl || !rowBtn || !editorView) return;
-    const vr = getVisibleBounds(); // visible rect (for horizontal bounds)
-    if (!vr) return;
+    const x = getVisibleTableX();
+    if (!x) return;
     const tr = currentTableEl.getBoundingClientRect(); // table rect (for vertical bounds)
     const rtl = isRTL(currentTableEl);
 
-    // Row button: spans visible width, below the table
-    rowBtn.style.left = vr.left + "px";
+    // Row button: spans the visible table width, below the table
+    rowBtn.style.left = x.left + "px";
     rowBtn.style.top = tr.bottom + "px";
-    rowBtn.style.width = vr.width + "px";
+    rowBtn.style.width = x.width + "px";
     rowBtn.style.height = "18px";
 
-    // Col button: at the visible right edge, table's vertical position & height
+    // Col button: at the table's inline-end edge, table's vertical position & height
     colBtn.style.display = "flex";
     if (rtl) {
-      colBtn.style.left = vr.left - 20 + "px";
+      colBtn.style.left = x.left - 20 + "px";
       colBtn.style.borderRadius = "4px 0 0 4px";
     } else {
-      colBtn.style.left = vr.right + 2 + "px";
+      colBtn.style.left = x.right + 2 + "px";
       colBtn.style.borderRadius = "0 4px 4px 0";
     }
     colBtn.style.top = tr.top + "px";
@@ -199,8 +218,8 @@ export function tableControlsPlugin(schema) {
 
   const positionGrips = (cellEl) => {
     if (!currentTableEl || !rowGrip || !cellEl) return;
-    const vr = getVisibleBounds(); // horizontal bounds
-    if (!vr) return;
+    const x = getVisibleTableX(); // horizontal bounds (table edges, clamped)
+    if (!x) return;
     const tr = currentTableEl.getBoundingClientRect(); // table vertical bounds
     const cr = cellEl.getBoundingClientRect();
     const rtl = isRTL(currentTableEl);
@@ -217,9 +236,9 @@ export function tableControlsPlugin(schema) {
     if (rowEl) {
       const rr = rowEl.getBoundingClientRect();
       if (rtl) {
-        rowGrip.style.left = vr.right + 4 + "px";
+        rowGrip.style.left = x.right + 4 + "px";
       } else {
-        rowGrip.style.left = vr.left - 18 + "px";
+        rowGrip.style.left = x.left - 18 + "px";
       }
       rowGrip.style.top = rr.top + rr.height / 2 - 7 + "px";
       rowGrip.style.width = "14px";
@@ -451,6 +470,11 @@ export function tableControlsPlugin(schema) {
       handleDOMEvents: {
         mousemove(view, event) {
           editorView = view;
+          // Keep controls hidden while dragging a column resize handle.
+          if (isResizing(view)) {
+            hide();
+            return false;
+          }
           const cellEl =
             event.target.closest && event.target.closest("td, th");
           const tableEl =
@@ -503,10 +527,19 @@ export function tableControlsPlugin(schema) {
 
       return {
         update() {
-          if (currentTableEl) {
-            if (!document.body.contains(currentTableEl)) hide();
-            else positionAddButtons();
+          if (isResizing(view)) {
+            hide();
+            return;
           }
+          if (!currentTableEl) return;
+          if (!document.body.contains(currentTableEl)) {
+            hide();
+            return;
+          }
+          positionAddButtons();
+          // Keep the grips aligned when the table shifts (edits above it, row growth, etc.).
+          if (hoveredCell && document.body.contains(hoveredCell))
+            positionGrips(hoveredCell);
         },
         destroy() {
           clearTimeout(hideTimer);
