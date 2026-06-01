@@ -55,26 +55,77 @@ md.enable([
 // 1. Strip thead/tbody wrappers — ProseMirror tables have no equivalent nodes.
 // 2. Wrap cell (th/td) inline content in paragraph tokens — ProseMirror table cells
 //    require block content (content: 'block+'), but markdown-it emits raw inline tokens.
-const SKIP_TABLE_TOKENS = new Set([
-  'thead_open', 'thead_close', 'tbody_open', 'tbody_close',
-]);
-const CELL_OPEN_TOKENS = new Set(['th_open', 'td_open']);
-const CELL_CLOSE_TOKENS = new Set(['th_close', 'td_close']);
+// 3. Pull `<!--cw-colwidths:...-->` markers out of the source and re-apply the
+//    widths to each table's first-row cells (so columnResizing widths survive
+//    a markdown round-trip).
+const COLWIDTHS_MARKER = /^[ \t]*<!--cw-colwidths:([\d,]+)-->[ \t]*\r?\n/gm;
+const paragraphToken = nesting => ({
+  type: nesting > 0 ? 'paragraph_open' : 'paragraph_close',
+  tag: 'p',
+  nesting,
+  attrs: null,
+  content: '',
+});
+
+// Strip every `<!--cw-colwidths:...-->` line out of the source; return the cleaned
+// source plus an ordered queue (one int[] per table) for re-application.
+const extractColwidths = src => {
+  const queue = [];
+  const cleaned = src.replace(COLWIDTHS_MARKER, (_match, widths) => {
+    queue.push(widths.split(',').map(w => parseInt(w, 10) || 0));
+    return '';
+  });
+  return [cleaned, queue];
+};
+
 const originalParse = md.parse.bind(md);
 md.parse = (src, env) => {
-  const tokens = originalParse(src, env);
+  const [cleanedSrc, colwidthsQueue] = extractColwidths(src);
+  const tokens = originalParse(cleanedSrc, env);
+
   const result = [];
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (SKIP_TABLE_TOKENS.has(t.type)) continue;
-    if (CELL_OPEN_TOKENS.has(t.type)) {
-      result.push(t);
-      result.push({ type: 'paragraph_open', tag: 'p', nesting: 1, attrs: null, content: '' });
-    } else if (CELL_CLOSE_TOKENS.has(t.type)) {
-      result.push({ type: 'paragraph_close', tag: 'p', nesting: -1, attrs: null, content: '' });
-      result.push(t);
-    } else {
-      result.push(t);
+  let tableIdx = 0;
+  let widths = null;
+  let inFirstRow = false;
+  let colCursor = 0;
+
+  for (const t of tokens) {
+    switch (t.type) {
+      case 'thead_open':
+      case 'thead_close':
+      case 'tbody_open':
+      case 'tbody_close':
+        break;
+      case 'table_open':
+        widths = colwidthsQueue[tableIdx] || null;
+        tableIdx += 1;
+        inFirstRow = false;
+        result.push(t);
+        break;
+      case 'tr_open':
+        if (widths && !inFirstRow) { inFirstRow = true; colCursor = 0; }
+        result.push(t);
+        break;
+      case 'tr_close':
+        inFirstRow = false;
+        result.push(t);
+        break;
+      case 'th_open':
+      case 'td_open': {
+        if (inFirstRow && widths) {
+          const w = widths[colCursor];
+          if (w > 0) t.attrSet('data-colwidth', String(w));
+          colCursor += 1;
+        }
+        result.push(t, paragraphToken(1));
+        break;
+      }
+      case 'th_close':
+      case 'td_close':
+        result.push(paragraphToken(-1), t);
+        break;
+      default:
+        result.push(t);
     }
   }
   return result;

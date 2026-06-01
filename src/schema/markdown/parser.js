@@ -62,9 +62,18 @@ export const baseNodesMdToPmMapping = {
   },
   table: { block: 'table' },
   tr: { block: 'table_row' },
-  th: { block: 'table_header' },
-  td: { block: 'table_cell' },
+  th: { block: 'table_header', getAttrs: cellColwidthAttrs },
+  td: { block: 'table_cell', getAttrs: cellColwidthAttrs },
 };
+
+// Read the `data-colwidth` attribute applied by the article parser onto th/td tokens
+// and turn it into the colwidth attr shape that prosemirror-tables expects.
+function cellColwidthAttrs(tok) {
+  const raw = tok.attrGet && tok.attrGet('data-colwidth');
+  if (!raw) return {};
+  const widths = raw.split(',').map(n => parseInt(n, 10)).filter(n => n > 0);
+  return widths.length ? { colwidth: widths } : {};
+}
 
 export const baseMarksMdToPmMapping = {
   em: { mark: 'em' },
