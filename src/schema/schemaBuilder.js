@@ -5,7 +5,7 @@ import { schema as baseSchema } from 'prosemirror-markdown';
 /**
  * Build a schema with only specified marks and nodes enabled
  * This controls keyboard shortcuts, paste, input rules, and menu
- * 
+ *
  * @param {Array<string>} enabledMarks - Array of mark names to allow
  * @param {Array<string>} enabledNodes - Array of node names to allow (e.g., ['bulletList', 'orderedList'])
  * @returns {Schema}
@@ -13,7 +13,7 @@ import { schema as baseSchema } from 'prosemirror-markdown';
 export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link'], enabledNodes = ['bulletList', 'orderedList']) {
   // Build marks string for nodes (space-separated mark names)
   const marksString = enabledMarks.length > 0 ? enabledMarks.join(' ') : '';
-  
+
   // Check which nodes are enabled
   const hasBulletList = enabledNodes.includes('bulletList');
   const hasOrderedList = enabledNodes.includes('orderedList');
@@ -47,7 +47,8 @@ export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link
         ...baseSchema.spec.nodes.get('image'),
         attrs: {
           ...baseSchema.spec.nodes.get('image').attrs,
-          height: { default: null }
+          height: { default: null },
+          width: { default: null }
         },
         parseDOM: [{
           tag: 'img[src]',
@@ -55,16 +56,15 @@ export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link
             src: dom.getAttribute('src'),
             title: dom.getAttribute('title'),
             alt: dom.getAttribute('alt'),
-            height: parseInt(dom.style.height)
+            height: parseInt(dom.style.height) || null,
+            width: dom.style.width || null
           })
         }],
         toDOM: node => {
-          const attrs = {
-            src: node.attrs.src,
-            alt: node.attrs.alt,
-            height: node.attrs.height
-          };
-          if (node.attrs.height) {
+          const attrs = { src: node.attrs.src, alt: node.attrs.alt };
+          if (node.attrs.width) {
+            attrs.style = `width: ${node.attrs.width}; max-width: 100%; height: auto`;
+          } else if (node.attrs.height) {
             attrs.style = `height: ${node.attrs.height}`;
           }
           return ["img", attrs];
@@ -92,8 +92,8 @@ export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link
       }),
     } : {}),
     mention: {
-      attrs: { 
-        userFullName: { default: '' }, 
+      attrs: {
+        userFullName: { default: '' },
         userId: { default: '' },
         mentionType: { default: 'user' }
       },
@@ -155,23 +155,23 @@ export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link
 
   // Build marks object - ONLY include enabled marks
   const marks = {};
-  
+
   if (enabledMarks.includes('link')) {
     marks.link = baseSchema.spec.marks.get('link');
   }
-  
+
   if (enabledMarks.includes('em')) {
     marks.em = baseSchema.spec.marks.get('em');
   }
-  
+
   if (enabledMarks.includes('strong')) {
     marks.strong = baseSchema.spec.marks.get('strong');
   }
-  
+
   if (enabledMarks.includes('code')) {
     marks.code = baseSchema.spec.marks.get('code');
   }
-  
+
   if (enabledMarks.includes('strike')) {
     marks.strike = {
       parseDOM: [

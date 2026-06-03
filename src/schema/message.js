@@ -15,7 +15,8 @@ export const messageSchema = new Schema({
       ...schema.spec.nodes.get('image'),
       attrs: {
         ...schema.spec.nodes.get('image').attrs,
-        height: {default: null}
+        height: {default: null},
+        width: {default: null}
       },
       parseDOM: [{
         tag: 'img[src]',
@@ -23,21 +24,20 @@ export const messageSchema = new Schema({
           src: dom.getAttribute('src'),
           title: dom.getAttribute('title'),
           alt: dom.getAttribute('alt'),
-          height: parseInt(dom.style.height)
+          height: parseInt(dom.style.height) || null,
+          width: dom.style.width || null
         })
       }],
       toDOM: node => {
-        const attrs = {
-          src: node.attrs.src,
-          alt: node.attrs.alt,
-          height: node.attrs.height
-        };
-        if (node.attrs.height) {
+        const attrs = { src: node.attrs.src, alt: node.attrs.alt };
+        if (node.attrs.width) {
+          attrs.style = `width: ${node.attrs.width}; max-width: 100%; height: auto`;
+        } else if (node.attrs.height) {
           attrs.style = `height: ${node.attrs.height}`;
         }
         return ["img", attrs];
       }
-    }, 
+    },
     ordered_list: Object.assign(orderedList, {
       content: 'list_item+',
       group: 'block',
@@ -48,8 +48,8 @@ export const messageSchema = new Schema({
     }),
     list_item: Object.assign(listItem, { content: 'paragraph block*' }),
     mention: {
-      attrs: { 
-        userFullName: { default: '' }, 
+      attrs: {
+        userFullName: { default: '' },
         userId: { default: '' },
         mentionType: { default: 'user' }
       },
@@ -75,7 +75,7 @@ export const messageSchema = new Schema({
             const userId = dom.getAttribute('mention-user-id');
             const userFullName = dom.getAttribute('mention-user-full-name');
             const mentionType = dom.getAttribute('mention-type') || 'user';
-            
+
             return { userId, userFullName, mentionType };
           },
         },

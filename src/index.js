@@ -17,6 +17,7 @@ import {
 import buildMenuOptions from "./menu/menuOptions";
 import { autoLinkURLs } from "./plugins/autoLink";
 import { tableControlsPlugin } from "./plugins/table";
+import isolateImagesPlugin from "./plugins/isolateImages";
 
 export { EditorState, Selection } from "prosemirror-state";
 export { EditorView } from "prosemirror-view";
@@ -54,6 +55,8 @@ export const buildEditor = ({
     gapCursor(),
     schema.nodes.table ? tableEditing() : null,
     schema.nodes.table ? tableControlsPlugin(schema) : null,
+    // editor with images (messages and articles): keep each image alone on its line.
+    schema.nodes.image ? isolateImagesPlugin() : null,
     Placeholder(placeholder),
     menuBar({
       floating: true,
