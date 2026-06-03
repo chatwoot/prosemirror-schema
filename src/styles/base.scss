@@ -209,6 +209,9 @@ li.ProseMirror-selectednode:after {
     margin-left: 0;
   }
 
+  ul, ul ul, ul ul ul { list-style-type: disc; }
+  ol, ol ol, ol ol ol { list-style-type: decimal; }
+
   li {
     position: relative;
     padding-left: var(--space-smaller);
