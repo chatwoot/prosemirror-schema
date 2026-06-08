@@ -60,6 +60,9 @@ md.enable([
 //    a markdown round-trip).
 const COLWIDTHS_MARKER = /^[ \t]*<!--cw-colwidths:([\d,]+)-->[ \t]*\r?$/;
 const FENCE = /^[ \t]*(```|~~~)/;
+// Leading blockquote markers (`> `, `> > `, …). Stripped before marker/table
+// detection so a table nested in a blockquote is counted and sized like any other.
+const BLOCKQUOTE_PREFIX = /^[ \t]*(?:>[ \t]?)+/;
 // A markdown table is detected by its delimiter row (`| --- | --- |`). Requiring a
 // pipe keeps thematic breaks (`---`) from being miscounted as tables.
 const isTableDelimiter = line =>
@@ -80,14 +83,16 @@ const extractColwidths = src => {
   let inFence = false;
   const kept = [];
   for (const line of src.split('\n')) {
-    if (FENCE.test(line)) inFence = !inFence;
+    // Detect against the un-quoted line so blockquote-nested markers/tables match.
+    const bare = line.replace(BLOCKQUOTE_PREFIX, '');
+    if (FENCE.test(bare)) inFence = !inFence;
     if (!inFence) {
-      const marker = line.match(COLWIDTHS_MARKER);
+      const marker = bare.match(COLWIDTHS_MARKER);
       if (marker) {
         widthsByTable[tableCount] = marker[1].split(',').map(w => parseInt(w, 10) || 0);
         continue;
       }
-      if (isTableDelimiter(line)) tableCount += 1;
+      if (isTableDelimiter(bare)) tableCount += 1;
     }
     kept.push(line);
   }
