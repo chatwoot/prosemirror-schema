@@ -167,22 +167,37 @@
 
     table {
       border-collapse: collapse;
+      table-layout: fixed;
       width: 100%;
+      overflow: hidden;
     }
 
     th,
     td {
       border: 1px solid rgb(var(--border-weak));
-      padding: var(--space-small) var(--space-normal);
+      padding: var(--space-small) var(--space-slab);
       text-align: start;
       vertical-align: top;
       position: relative;
-      min-width: 4rem;
+      // 50px == columnResizing({ cellMinWidth: 50 }) and the backend renderer's floor.
+      min-width: 3.125rem;
       background: transparent;
+      box-sizing: border-box;
 
       p {
         margin: 0;
       }
+    }
+
+    .column-resize-handle {
+      position: absolute;
+      top: 0;
+      inset-inline-end: -2px;
+      bottom: 0;
+      width: 4px;
+      background: rgb(var(--blue-9));
+      pointer-events: none;
+      z-index: 20;
     }
 
     th {

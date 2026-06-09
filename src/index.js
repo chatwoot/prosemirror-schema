@@ -3,7 +3,7 @@ import { Plugin } from "prosemirror-state";
 import { dropCursor } from "prosemirror-dropcursor";
 import { gapCursor } from "prosemirror-gapcursor";
 import { menuBar } from "prosemirror-menu";
-import { tableEditing } from "prosemirror-tables";
+import { tableEditing, columnResizing } from "prosemirror-tables";
 
 import Placeholder from "./Placeholder";
 import {
@@ -53,6 +53,7 @@ export const buildEditor = ({
     listInputRules(schema),
     dropCursor(),
     gapCursor(),
+    schema.nodes.table ? columnResizing({ cellMinWidth: 50 }) : null,
     schema.nodes.table ? tableEditing() : null,
     schema.nodes.table ? tableControlsPlugin(schema) : null,
     // editor with images (messages and articles): keep each image alone on its line.

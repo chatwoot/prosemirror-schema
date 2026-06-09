@@ -234,6 +234,20 @@ function serializeCellContent(state, cell) {
   return parts.join('');
 }
 
+// Flatten first-row colwidths into the comment marker the parser re-applies on load.
+// Each cell contributes `colspan` slots; cells with no width contribute 0.
+// Returns an empty string when no cell has a saved width.
+function serializeColwidths(headerRow) {
+  const widths = [];
+  headerRow.forEach(cell => {
+    const { colwidth, colspan = 1 } = cell.attrs;
+    for (let j = 0; j < colspan; j++) {
+      widths.push(colwidth && colwidth[j] ? Math.round(colwidth[j]) : 0);
+    }
+  });
+  return widths.some(w => w > 0) ? `<!--cw-colwidths:${widths.join(',')}-->\n` : '';
+}
+
 // Table node → markdown table with aligned columns
 export const table = (state, node) => {
   const rows = [];
@@ -241,6 +255,11 @@ export const table = (state, node) => {
   if (rows.length === 0) return;
 
   const colCount = rows[0].childCount;
+
+  // Persist column widths set by the columnResizing plugin as an HTML comment.
+  // Editor parser strips and re-applies it; CommonMark renderers ignore it.
+  const colwidthMarker = serializeColwidths(rows[0]);
+  if (colwidthMarker) state.write(colwidthMarker);
 
   // Calculate column widths for alignment
   const colWidths = new Array(colCount).fill(3);
