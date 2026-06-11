@@ -210,6 +210,14 @@ const MARK_WRAPPERS = {
   link: null, // handled specially
 };
 
+// CommonMark link destinations cannot contain whitespace or unbalanced
+// parens; percent-encode/escape them so the stored markdown stays parseable
+// for any href. Paren escaping happens after esc(), which would otherwise
+// double-escape the backslashes. Shared by link.close and table cells.
+function serializeLinkHref(state, href) {
+  return state.esc(href.replace(/\s/g, encodeURIComponent)).replace(/[()]/g, '\\$&');
+}
+
 // Serialize cell inline content to a markdown string (preserves marks)
 function serializeCellContent(state, cell) {
   const parts = [];
@@ -223,7 +231,7 @@ function serializeCellContent(state, cell) {
             if (wrapper) {
               t = wrapper[0] + t + wrapper[1];
             } else if (mark.type.name === 'link' && mark.attrs.href) {
-              t = '[' + t + '](' + mark.attrs.href + ')';
+              t = '[' + t + '](' + serializeLinkHref(state, mark.attrs.href) + ')';
             }
           });
         }
@@ -337,7 +345,7 @@ export const link = {
     return isPlainURL(mark, parent, index, -1)
       ? '>'
       : '](' +
-          state.esc(mark.attrs.href) +
+          serializeLinkHref(state, mark.attrs.href) +
           (mark.attrs.title ? ' ' + state.quote(mark.attrs.title) : '') +
           ')';
   },
@@ -366,7 +374,9 @@ function backticksFor(node, side) {
 }
 
 function isPlainURL(link, parent, index, side) {
-  if (link.attrs.title || !/^\w+:/.test(link.attrs.href)) return false;
+  // `<url>` autolinks cannot contain whitespace; fall back to the
+  // []() form, which percent-encodes it
+  if (link.attrs.title || !/^\w+:/.test(link.attrs.href) || /\s/.test(link.attrs.href)) return false;
   let content = parent.child(index + (side < 0 ? -1 : 0));
   if (
     !content.isText ||
