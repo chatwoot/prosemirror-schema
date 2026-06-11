@@ -36,7 +36,10 @@ class ImageResizeView {
 
   onMouseDown = event => {
     event.preventDefault();
-    const containerWidth = this.dom.parentElement?.clientWidth;
+    // Pasted images can be wrapped in an inline ancestor (e.g. a link), whose
+    // clientWidth is 0; fall back to the editor width so resize still works.
+    const containerWidth =
+      this.dom.parentElement?.clientWidth || this.view.dom.clientWidth;
     if (!containerWidth) return;
     // In RTL the handle sits on the bottom-LEFT corner (via inset-inline-end),
     // so outward motion is a NEGATIVE clientX delta. Flip the X contribution
