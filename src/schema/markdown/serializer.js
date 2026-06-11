@@ -210,6 +210,14 @@ const MARK_WRAPPERS = {
   link: null, // handled specially
 };
 
+// CommonMark link destinations cannot contain whitespace or unbalanced
+// parens; percent-encode/escape them so the stored markdown stays parseable
+// for any href. Paren escaping happens after esc(), which would otherwise
+// double-escape the backslashes. Shared by link.close and table cells.
+function serializeLinkHref(state, href) {
+  return state.esc(href.replace(/\s/g, encodeURIComponent)).replace(/[()]/g, '\\$&');
+}
+
 // Serialize cell inline content to a markdown string (preserves marks)
 function serializeCellContent(state, cell) {
   const parts = [];
@@ -223,7 +231,7 @@ function serializeCellContent(state, cell) {
             if (wrapper) {
               t = wrapper[0] + t + wrapper[1];
             } else if (mark.type.name === 'link' && mark.attrs.href) {
-              t = '[' + t + '](' + mark.attrs.href + ')';
+              t = '[' + t + '](' + serializeLinkHref(state, mark.attrs.href) + ')';
             }
           });
         }
@@ -337,13 +345,7 @@ export const link = {
     return isPlainURL(mark, parent, index, -1)
       ? '>'
       : '](' +
-          // CommonMark link destinations cannot contain whitespace or
-          // unbalanced parens; percent-encode/escape them so the stored
-          // markdown stays parseable for any href. Paren escaping happens
-          // after esc(), which would otherwise double-escape the backslashes
-          state
-            .esc(mark.attrs.href.replace(/\s/g, encodeURIComponent))
-            .replace(/[()]/g, '\\$&') +
+          serializeLinkHref(state, mark.attrs.href) +
           (mark.attrs.title ? ' ' + state.quote(mark.attrs.title) : '') +
           ')';
   },
