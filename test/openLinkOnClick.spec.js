@@ -1,0 +1,52 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { EditorState } from 'prosemirror-state';
+
+import { openLinkOnClick } from '../src/plugins/openLinkOnClick';
+import { messageSchema } from '../src/schema/message';
+
+const s = messageSchema;
+const HREF = 'https://example.com/pricing/';
+
+// doc: <p>go <a>here</a></p> — "go " spans pos 1-4, linked "here" spans 4-8
+const doc = s.node('doc', null, [
+  s.node('paragraph', null, [
+    s.text('go '),
+    s.text('here', [s.marks.link.create({ href: HREF })]),
+  ]),
+]);
+const view = { state: EditorState.create({ doc }) };
+const handleClick = openLinkOnClick().props.handleClick;
+
+describe('openLinkOnClick', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', { open: vi.fn() });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('opens the link in a new tab on cmd+click', () => {
+    const handled = handleClick(view, 5, { metaKey: true, ctrlKey: false });
+    expect(handled).toBe(true);
+    expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener noreferrer');
+  });
+
+  it('opens the link on ctrl+click', () => {
+    const handled = handleClick(view, 5, { metaKey: false, ctrlKey: true });
+    expect(handled).toBe(true);
+    expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener noreferrer');
+  });
+
+  it('does nothing on plain click', () => {
+    const handled = handleClick(view, 5, { metaKey: false, ctrlKey: false });
+    expect(handled).toBe(false);
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
+  it('does nothing on cmd+click outside a link', () => {
+    const handled = handleClick(view, 2, { metaKey: true, ctrlKey: false });
+    expect(handled).toBe(false);
+    expect(window.open).not.toHaveBeenCalled();
+  });
+});

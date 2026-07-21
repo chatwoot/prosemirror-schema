@@ -18,6 +18,7 @@ import buildMenuOptions from "./menu/menuOptions";
 import { autoLinkURLs } from "./plugins/autoLink";
 import { tableControlsPlugin } from "./plugins/table";
 import isolateImagesPlugin from "./plugins/isolateImages";
+import { openLinkOnClick } from "./plugins/openLinkOnClick";
 
 export { EditorState, Selection } from "prosemirror-state";
 export { EditorView } from "prosemirror-view";
@@ -53,6 +54,7 @@ export const buildEditor = ({
     textFormattingInputRules(schema),
     linksInputRules(schema),
     autoLinkURLs(schema),
+    schema.marks.link ? openLinkOnClick() : null,
     hrInputRules(schema),
     listInputRules(schema),
     dropCursor(),
