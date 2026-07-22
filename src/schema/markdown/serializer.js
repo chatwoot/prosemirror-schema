@@ -3,7 +3,8 @@ const BLOCK_TYPES = new Set(['blockquote', 'code_block', 'bullet_list', 'ordered
 
 const MARKDOWN_PATTERNS = {
   // CommonMark list markers: "* ", "- ", "+ " or "1. ", "1) " (up to 9 digits)
-  list: /^([*\-+]|\d{1,9}[.)])\s/,
+  // Bare marker at end also counts (rest of line may be image/mention nodes)
+  list: /^([*\-+]|\d{1,9}[.)])(\s|$)/,
   // Block-level markdown syntax that should not be preceded by backslash
   // Includes: blockquote (>), ATX headings (#), fenced code (``` or ~~~), thematic breaks (--, ---, ***, ___)
   blockStart: /^(>\s?|#{1,6}\s|```|~~~|[-*_]{2,}$)/,
@@ -63,6 +64,16 @@ const findNonEmptySibling = (parent, index, dir) => {
 const adjacentToBlock = (parent, index) =>
   BLOCK_TYPES.has(findNonEmptySibling(parent, index, 1)) ||
   BLOCK_TYPES.has(findNonEmptySibling(parent, index, -1));
+
+// Full line text from `start` — joins consecutive text siblings, since marks
+// (link/bold) split a line into multiple text nodes ("- " + linked url)
+const lineTextFrom = (parent, start) => {
+  let text = '';
+  for (let i = start; i < parent.childCount && parent.child(i).isText; i++) {
+    text += parent.child(i).text;
+  }
+  return text;
+};
 
 // True if any sibling after `start` has content (text or children)
 const hasContentAfter = (parent, start) => {
@@ -181,6 +192,7 @@ export const image = (state, node) => {
 // - Text after → "\\\n" (line break works correctly)
 // - List syntax after ("* ", "1. ") → "\n" (user typing list)
 // - Block syntax after (">", "#", etc.) → "\n" (user typing blockquote/heading)
+// - List/block syntax split by marks ("- " + linked url) → "\n" (full line tested)
 // - Multiple hard_breaks without content → "\n" (no stray backslash)
 // - Trailing / no content after → "\n" (no literal "\" showing)
 export const hard_break = (state, node, parent, index) => {
@@ -189,7 +201,7 @@ export const hard_break = (state, node, parent, index) => {
     if (sibling.type.name === 'hard_break') continue;
     if (sibling.isText) {
       if (!sibling.text.trim()) continue;
-      return state.write(startsWithMarkdownSyntax(sibling.text) ? '\n' : '\\\n');
+      return state.write(startsWithMarkdownSyntax(lineTextFrom(parent, i)) ? '\n' : '\\\n');
     }
     return state.write('\\\n');
   }
@@ -224,7 +236,8 @@ function serializeCellContent(state, cell) {
   cell.forEach(block => {
     if (block.type.name === 'paragraph') {
       block.forEach(child => {
-        let t = child.text || '';
+        // Escape pipes so cell text can't add column boundaries on re-parse
+        let t = (child.text || '').replace(/\|/g, '\\|');
         if (child.marks) {
           child.marks.forEach(mark => {
             const wrapper = MARK_WRAPPERS[mark.type.name];

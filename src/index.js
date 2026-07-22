@@ -22,6 +22,10 @@ import isolateImagesPlugin from "./plugins/isolateImages";
 export { EditorState, Selection } from "prosemirror-state";
 export { EditorView } from "prosemirror-view";
 
+export { InputRule, inputRules } from "prosemirror-inputrules";
+export { toggleMark } from "prosemirror-commands";
+export { wrapInList } from "prosemirror-schema-list";
+
 export { MessageMarkdownTransformer } from "./schema/markdown/messageParser";
 export { ArticleMarkdownTransformer } from "./schema/markdown/articleParser";
 
