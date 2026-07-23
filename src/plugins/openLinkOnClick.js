@@ -1,14 +1,20 @@
 import { Plugin } from "prosemirror-state";
 
+// macOS opens links with Cmd+Click; Ctrl+Click is reserved for the OS
+// secondary-click (context menu). Other platforms use Ctrl+Click.
+const isMac = () =>
+  typeof navigator !== "undefined" &&
+  /Mac|iP(hone|ad|od)/.test(navigator.platform || "");
+
 /**
- * Opens links in a new tab on Cmd/Ctrl+Click.
+ * Opens links in a new tab on Cmd+Click (macOS) or Ctrl+Click (other platforms).
  * Plain click keeps the default behavior (placing the cursor for editing).
  */
 export const openLinkOnClick = () =>
   new Plugin({
     props: {
       handleClick(view, pos, event) {
-        if (!event.metaKey && !event.ctrlKey) return false;
+        if (!(isMac() ? event.metaKey : event.ctrlKey)) return false;
 
         const { doc } = view.state;
         const node = doc.nodeAt(pos);

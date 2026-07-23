@@ -17,6 +17,9 @@ const doc = s.node('doc', null, [
 const view = { state: EditorState.create({ doc }) };
 const handleClick = openLinkOnClick().props.handleClick;
 
+const stubPlatform = platform =>
+  vi.stubGlobal('navigator', { platform });
+
 describe('openLinkOnClick', () => {
   beforeEach(() => {
     vi.stubGlobal('window', { open: vi.fn() });
@@ -26,25 +29,36 @@ describe('openLinkOnClick', () => {
     vi.unstubAllGlobals();
   });
 
-  it('opens the link in a new tab on cmd+click', () => {
+  it('opens the link in a new tab on cmd+click (macOS)', () => {
+    stubPlatform('MacIntel');
     const handled = handleClick(view, 5, { metaKey: true, ctrlKey: false });
     expect(handled).toBe(true);
     expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener noreferrer');
   });
 
-  it('opens the link on ctrl+click', () => {
+  it('ignores ctrl+click on macOS (reserved for the context menu)', () => {
+    stubPlatform('MacIntel');
+    const handled = handleClick(view, 5, { metaKey: false, ctrlKey: true });
+    expect(handled).toBe(false);
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
+  it('opens the link on ctrl+click (Windows/Linux)', () => {
+    stubPlatform('Win32');
     const handled = handleClick(view, 5, { metaKey: false, ctrlKey: true });
     expect(handled).toBe(true);
     expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener noreferrer');
   });
 
   it('does nothing on plain click', () => {
+    stubPlatform('MacIntel');
     const handled = handleClick(view, 5, { metaKey: false, ctrlKey: false });
     expect(handled).toBe(false);
     expect(window.open).not.toHaveBeenCalled();
   });
 
   it('does nothing on cmd+click outside a link', () => {
+    stubPlatform('MacIntel');
     const handled = handleClick(view, 2, { metaKey: true, ctrlKey: false });
     expect(handled).toBe(false);
     expect(window.open).not.toHaveBeenCalled();
