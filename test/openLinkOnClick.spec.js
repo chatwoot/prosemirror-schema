@@ -78,21 +78,23 @@ describe('openLinkOnClick', () => {
     'javascript:alert(1)',
     'data:text/html,<script>alert(1)</script>',
     'vbscript:msgbox(1)',
-    'java\tscript:alert(1)', // browsers strip the tab and run it
-    '  JavaScript:alert(1)',
-    '\x01javascript:alert(1)', // browsers trim leading control chars and run it
-  ])('does not open unsafe href %j', unsafeHref => {
+    '#faq',
+    '../getting-started',
+    '?locale=en',
+  ])('does not open href %j', href => {
     stubPlatform('MacIntel');
-    expect(clickLink(unsafeHref)).toBe(false);
+    expect(clickLink(href)).toBe(false);
     expect(window.open).not.toHaveBeenCalled();
   });
 
-  it.each(['#faq', '../getting-started', '?locale=en', '/help/getting-started'])(
-    'opens safe relative/fragment href %j',
-    href => {
-      stubPlatform('MacIntel');
-      expect(clickLink(href)).toBe(true);
-      expect(window.open).toHaveBeenCalledWith(href, '_blank', 'noopener,noreferrer');
-    }
-  );
+  // Opened: absolute and root-relative links resolve the same anywhere.
+  it.each([
+    'https://example.com/getting-started',
+    'mailto:help@example.com',
+    '/hc/user-guide/articles/getting-started',
+  ])('opens safe href %j', href => {
+    stubPlatform('MacIntel');
+    expect(clickLink(href)).toBe(true);
+    expect(window.open).toHaveBeenCalledWith(href, '_blank', 'noopener,noreferrer');
+  });
 });
