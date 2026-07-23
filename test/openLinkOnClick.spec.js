@@ -64,19 +64,35 @@ describe('openLinkOnClick', () => {
     expect(window.open).not.toHaveBeenCalled();
   });
 
-  it.each(['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>'])(
-    'does not open unsafe href %s',
-    unsafeHref => {
+  const clickLink = href => {
+    const linkDoc = s.node('doc', null, [
+      s.node('paragraph', null, [
+        s.text('x', [s.marks.link.create({ href })]),
+      ]),
+    ]);
+    const linkView = { state: EditorState.create({ doc: linkDoc }) };
+    return handleClick(linkView, 1, { metaKey: true, ctrlKey: false });
+  };
+
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    'vbscript:msgbox(1)',
+    'java\tscript:alert(1)', // browsers strip the tab and run it
+    '  JavaScript:alert(1)',
+    '\x01javascript:alert(1)', // browsers trim leading control chars and run it
+  ])('does not open unsafe href %j', unsafeHref => {
+    stubPlatform('MacIntel');
+    expect(clickLink(unsafeHref)).toBe(false);
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
+  it.each(['#faq', '../getting-started', '?locale=en', '/help/getting-started'])(
+    'opens safe relative/fragment href %j',
+    href => {
       stubPlatform('MacIntel');
-      const unsafeDoc = s.node('doc', null, [
-        s.node('paragraph', null, [
-          s.text('x', [s.marks.link.create({ href: unsafeHref })]),
-        ]),
-      ]);
-      const unsafeView = { state: EditorState.create({ doc: unsafeDoc }) };
-      const handled = handleClick(unsafeView, 1, { metaKey: true, ctrlKey: false });
-      expect(handled).toBe(false);
-      expect(window.open).not.toHaveBeenCalled();
+      expect(clickLink(href)).toBe(true);
+      expect(window.open).toHaveBeenCalledWith(href, '_blank', 'noopener,noreferrer');
     }
   );
 });

@@ -1,16 +1,16 @@
 import { Plugin } from "prosemirror-state";
-import { normalizeUrl } from "../rules/links";
 
-// macOS opens links with Cmd+Click; Ctrl+Click is reserved for the OS
-// secondary-click (context menu). Other platforms use Ctrl+Click.
+// Mac uses Cmd+Click to open links; Ctrl+Click is its context-menu gesture.
 const isMac = () =>
   typeof navigator !== "undefined" &&
   /Mac|iP(hone|ad|od)/.test(navigator.platform || "");
 
-/**
- * Opens links in a new tab on Cmd+Click (macOS) or Ctrl+Click (other platforms).
- * Plain click keeps the default behavior (placing the cursor for editing).
- */
+// Block script schemes; strip whitespace/controls that browsers ignore in the
+// scheme. Relative/fragment hrefs (#faq, ../page) have none and pass through.
+const isDangerousHref = href =>
+  /^(javascript|data|vbscript):/i.test(String(href).replace(/[\x00-\x20]/g, ""));
+
+// Opens links in a new tab on Cmd+Click (Mac) or Ctrl+Click (other platforms).
 export const openLinkOnClick = () =>
   new Plugin({
     props: {
@@ -22,12 +22,8 @@ export const openLinkOnClick = () =>
         const link =
           (node && node.marks.find(mark => mark.type.name === "link")) ||
           doc.resolve(pos).marks().find(mark => mark.type.name === "link");
-        if (!link) return false;
-
-        // Only open whitelisted schemes; blocks javascript:/data: hrefs that
-        // pasted HTML can inject into a link mark.
-        const href = normalizeUrl(link.attrs.href);
-        if (!href) return false;
+        const href = link && link.attrs.href;
+        if (!href || isDangerousHref(href)) return false;
 
         window.open(href, "_blank", "noopener,noreferrer");
         return true;
