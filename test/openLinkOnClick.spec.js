@@ -33,7 +33,7 @@ describe('openLinkOnClick', () => {
     stubPlatform('MacIntel');
     const handled = handleClick(view, 5, { metaKey: true, ctrlKey: false });
     expect(handled).toBe(true);
-    expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener noreferrer');
+    expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener,noreferrer');
   });
 
   it('ignores ctrl+click on macOS (reserved for the context menu)', () => {
@@ -47,7 +47,7 @@ describe('openLinkOnClick', () => {
     stubPlatform('Win32');
     const handled = handleClick(view, 5, { metaKey: false, ctrlKey: true });
     expect(handled).toBe(true);
-    expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener noreferrer');
+    expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener,noreferrer');
   });
 
   it('does nothing on plain click', () => {
@@ -63,4 +63,20 @@ describe('openLinkOnClick', () => {
     expect(handled).toBe(false);
     expect(window.open).not.toHaveBeenCalled();
   });
+
+  it.each(['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>'])(
+    'does not open unsafe href %s',
+    unsafeHref => {
+      stubPlatform('MacIntel');
+      const unsafeDoc = s.node('doc', null, [
+        s.node('paragraph', null, [
+          s.text('x', [s.marks.link.create({ href: unsafeHref })]),
+        ]),
+      ]);
+      const unsafeView = { state: EditorState.create({ doc: unsafeDoc }) };
+      const handled = handleClick(unsafeView, 1, { metaKey: true, ctrlKey: false });
+      expect(handled).toBe(false);
+      expect(window.open).not.toHaveBeenCalled();
+    }
+  );
 });

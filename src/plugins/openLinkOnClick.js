@@ -1,4 +1,5 @@
 import { Plugin } from "prosemirror-state";
+import { normalizeUrl } from "../rules/links";
 
 // macOS opens links with Cmd+Click; Ctrl+Click is reserved for the OS
 // secondary-click (context menu). Other platforms use Ctrl+Click.
@@ -21,9 +22,14 @@ export const openLinkOnClick = () =>
         const link =
           (node && node.marks.find(mark => mark.type.name === "link")) ||
           doc.resolve(pos).marks().find(mark => mark.type.name === "link");
-        if (!link || !link.attrs.href) return false;
+        if (!link) return false;
 
-        window.open(link.attrs.href, "_blank", "noopener noreferrer");
+        // Only open whitelisted schemes; blocks javascript:/data: hrefs that
+        // pasted HTML can inject into a link mark.
+        const href = normalizeUrl(link.attrs.href);
+        if (!href) return false;
+
+        window.open(href, "_blank", "noopener,noreferrer");
         return true;
       },
     },
