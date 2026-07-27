@@ -11,6 +11,7 @@ export const openLinkOnClick = () =>
   new Plugin({
     props: {
       handleClick(view, pos, event) {
+        if (event.button !== 0) return false;
         if (!(isMac() ? event.metaKey : event.ctrlKey)) return false;
 
         const { doc } = view.state;

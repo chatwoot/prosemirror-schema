@@ -31,35 +31,46 @@ describe('openLinkOnClick', () => {
 
   it('opens the link in a new tab on cmd+click (macOS)', () => {
     stubPlatform('MacIntel');
-    const handled = handleClick(view, 5, { metaKey: true, ctrlKey: false });
+    const handled = handleClick(view, 5, { button: 0, metaKey: true, ctrlKey: false });
     expect(handled).toBe(true);
     expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener,noreferrer');
   });
 
   it('ignores ctrl+click on macOS (reserved for the context menu)', () => {
     stubPlatform('MacIntel');
-    const handled = handleClick(view, 5, { metaKey: false, ctrlKey: true });
+    const handled = handleClick(view, 5, { button: 0, metaKey: false, ctrlKey: true });
     expect(handled).toBe(false);
     expect(window.open).not.toHaveBeenCalled();
   });
 
   it('opens the link on ctrl+click (Windows/Linux)', () => {
     stubPlatform('Win32');
-    const handled = handleClick(view, 5, { metaKey: false, ctrlKey: true });
+    const handled = handleClick(view, 5, { button: 0, metaKey: false, ctrlKey: true });
     expect(handled).toBe(true);
     expect(window.open).toHaveBeenCalledWith(HREF, '_blank', 'noopener,noreferrer');
   });
 
+  it.each([
+    { name: 'ctrl+right-click on Windows/Linux', platform: 'Win32', event: { button: 2, ctrlKey: true } },
+    { name: 'ctrl+middle-click on Windows/Linux', platform: 'Win32', event: { button: 1, ctrlKey: true } },
+    { name: 'cmd+right-click on macOS', platform: 'MacIntel', event: { button: 2, metaKey: true } },
+  ])('ignores $name', ({ platform, event }) => {
+    stubPlatform(platform);
+    const handled = handleClick(view, 5, event);
+    expect(handled).toBe(false);
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
   it('does nothing on plain click', () => {
     stubPlatform('MacIntel');
-    const handled = handleClick(view, 5, { metaKey: false, ctrlKey: false });
+    const handled = handleClick(view, 5, { button: 0, metaKey: false, ctrlKey: false });
     expect(handled).toBe(false);
     expect(window.open).not.toHaveBeenCalled();
   });
 
   it('does nothing on cmd+click outside a link', () => {
     stubPlatform('MacIntel');
-    const handled = handleClick(view, 2, { metaKey: true, ctrlKey: false });
+    const handled = handleClick(view, 2, { button: 0, metaKey: true, ctrlKey: false });
     expect(handled).toBe(false);
     expect(window.open).not.toHaveBeenCalled();
   });
@@ -71,7 +82,7 @@ describe('openLinkOnClick', () => {
       ]),
     ]);
     const linkView = { state: EditorState.create({ doc: linkDoc }) };
-    return handleClick(linkView, 1, { metaKey: true, ctrlKey: false });
+    return handleClick(linkView, 1, { button: 0, metaKey: true, ctrlKey: false });
   };
 
   it.each([
