@@ -81,6 +81,10 @@ describe('openLinkOnClick', () => {
     '#faq',
     '../getting-started',
     '?locale=en',
+    // A safe-looking line after a newline must not vouch for the scheme above
+    // it: browsers strip the newline and still navigate to `javascript:`.
+    'javascript:alert(1)//\nhttps://example.com',
+    'javascript:alert(1)//\r\n/hc/user-guide/articles/getting-started',
   ])('does not open href %j', href => {
     stubPlatform('MacIntel');
     expect(clickLink(href)).toBe(false);
@@ -96,5 +100,15 @@ describe('openLinkOnClick', () => {
     stubPlatform('MacIntel');
     expect(clickLink(href)).toBe(true);
     expect(window.open).toHaveBeenCalledWith(href, '_blank', 'noopener,noreferrer');
+  });
+
+  it('opens the trimmed href that was validated', () => {
+    stubPlatform('MacIntel');
+    expect(clickLink('  https://example.com/pricing  ')).toBe(true);
+    expect(window.open).toHaveBeenCalledWith(
+      'https://example.com/pricing',
+      '_blank',
+      'noopener,noreferrer'
+    );
   });
 });

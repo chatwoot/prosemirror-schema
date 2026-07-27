@@ -18,7 +18,8 @@ export const openLinkOnClick = () =>
         const link =
           (node && node.marks.find(mark => mark.type.name === "link")) ||
           doc.resolve(pos).marks().find(mark => mark.type.name === "link");
-        const href = link && link.attrs.href;
+        // Open exactly what was validated: isSafeUrl checks the trimmed href.
+        const href = (link?.attrs.href || "").trim();
 
         if (!href || !isSafeUrl(href)) return false;
 
