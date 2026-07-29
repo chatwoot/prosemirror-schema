@@ -23,13 +23,24 @@ const getLoneLinkUrl = paragraph => {
   return url;
 };
 
+// Captures come straight from the URL and land inside attribute values, so
+// escape them before interpolation — otherwise a crafted id can break out and
+// inject attributes (e.g. a quote in a YouTube video id adding an onload).
+const escapeHtml = value =>
+  String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+
 const renderTemplate = (template, captures) =>
   Object.entries(captures).reduce(
-    (html, [name, value]) => html.replaceAll(`%{${name}}`, value),
+    (html, [name, value]) => html.replaceAll(`%{${name}}`, escapeHtml(value)),
     template
   );
 
-const findEmbedHtml = (embeds, url) => {
+export const findEmbedHtml = (embeds, url) => {
   for (const { regex, template } of embeds) {
     const match = url.match(regex);
     if (match) return renderTemplate(template, match.groups || {});
