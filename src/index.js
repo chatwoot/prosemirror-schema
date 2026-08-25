@@ -39,6 +39,16 @@ export { buildMessageSchema } from "./schema/schemaBuilder";
 
 export { imageResizeView } from "./nodeViews/imageResize";
 
+export { default as imagePastePlugin } from "./plugins/image";
+export { default as embedPreviewPlugin } from "./plugins/embedPreview";
+export {
+  fileUploadPlugin,
+  hasActiveUploads,
+  insertFileUploads,
+  insertImageFiles,
+} from "./plugins/uploads";
+export { setUploadLabels } from "./plugins/uploadState";
+
 export const buildEditor = ({
   schema,
   placeholder,

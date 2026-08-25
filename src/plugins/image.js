@@ -1,10 +1,7 @@
 import { Plugin } from "prosemirror-state";
 
-/**
- * Check if URL is valid HTTP/HTTPS.
- * @param {string} url - URL to validate
- * @returns {boolean} True if valid HTTP/HTTPS URL
- */
+import { deleteImagesBySrc, mirrorExternalImages } from "./uploads";
+
 function isValidImageUrl(url) {
   if (!url) return false;
   try {
@@ -15,70 +12,44 @@ function isValidImageUrl(url) {
   }
 }
 
-/**
- * Update or remove an image in the editor.
- * @param {string} oldUrl - Current image URL
- * @param {string|null} newUrl - New URL to replace with, or null to remove
- * @param {EditorView} view - ProseMirror editor view
- */
-function modifyImage(oldUrl, newUrl, view) {
-  const tr = view.state.tr;
-
-  view.state.doc.descendants((node, pos) => {
-    if (node.type.name === "image" && node.attrs.src === oldUrl) {
-      newUrl
-        ? tr.setNodeMarkup(pos, null, { ...node.attrs, src: newUrl })
-        : tr.delete(pos, pos + node.nodeSize);
-    }
-  });
-
-  if (tr.docChanged) view.dispatch(tr);
+// Own-origin images (earlier uploads copied between articles) need no
+// mirroring — and the server rejects its own URLs anyway.
+function isSameOrigin(url) {
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin;
+  } catch {
+    return false;
+  }
 }
 
-/**
- * Creates a ProseMirror plugin that handles image pasting and uploading.
- *
- * @param {Function} uploadImage - A function that takes an image URL and returns a Promise
- * that resolves to the new URL after uploading.
- * @returns {Plugin} A ProseMirror plugin that handles image pasting.
- */
+// Mirrors pasted external images into storage: images stay visible with an
+// upload overlay while mirroring, duplicate URLs upload once, and a failed
+// mirror keeps the image with retry/remove controls instead of deleting it.
+// `uploadImage` is (url, signal) => Promise<newUrl>.
 const imagePastePlugin = (uploadImage) =>
   new Plugin({
     props: {
-      /**
-       * Handles the paste event in the editor.
-       *
-       * @param {EditorView} view - The ProseMirror editor view.
-       * @param {Event} event - The paste event.
-       * @param {Slice} slice - The ProseMirror Slice object representing the pasted content.
-       */
       handlePaste(view, event, slice) {
-        const valid = [];
+        const external = [];
         const invalid = [];
 
-        // Collect image URLs
         slice.content.descendants((node) => {
-          if (node.type.name === "image") {
-            const url = node.attrs.src;
-            const isValid = isValidImageUrl(url);
-            isValid ? valid.push(url) : invalid.push(url);
-          }
+          if (node.type.name !== "image") return;
+          const url = node.attrs.src;
+          // blob: previews are this editor's own in-flight uploads being
+          // copied around — leave them to their original upload.
+          if (typeof url === "string" && url.startsWith("blob:")) return;
+          if (isSameOrigin(url)) return;
+          if (isValidImageUrl(url)) external.push(url);
+          else invalid.push(url);
         });
 
-        // Process after paste completes
+        // Run after the paste has landed in the doc.
         setTimeout(() => {
-          // Remove invalid images
-          invalid.forEach((url) => modifyImage(url, null, view));
-
-          // Upload valid images
-          valid.forEach(async (url) => {
-            try {
-              const newUrl = await uploadImage(url);
-              modifyImage(url, newUrl, view);
-            } catch (error) {
-              console.error("Error uploading image:", error);
-            }
-          });
+          invalid.forEach((url) => deleteImagesBySrc(view, url));
+          if (external.length) {
+            mirrorExternalImages(view, external, { upload: uploadImage });
+          }
         }, 0);
       },
     },

@@ -21,7 +21,10 @@ export const triggerCharacters = (char, minChars = 0) => $position => {
 
   // Regular expression to find occurrences of 'char' followed by at least 'minChars' non-space characters.
   // It matches these sequences starting from the beginning of the text or after a space.
-  const regexp = new RegExp(`(?:^)?${char}[^\\s${char}]{${minChars},}`, 'g');
+  // \0 is textBetween's placeholder for non-text leaves (hard breaks, images).
+  // Treat it like whitespace, or a trigger typed before a line break swallows
+  // the break and the query never matches.
+  const regexp = new RegExp(`(?:^)?${char}[^\\s${char}\\0]{${minChars},}`, 'g');
 
   // Get the position before the current cursor position in the document.
   const textFrom = $position.before();
