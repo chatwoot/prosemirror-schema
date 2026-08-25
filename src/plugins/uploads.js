@@ -302,20 +302,14 @@ const removeUploadWidget = (view, id) => {
   view.dispatch(view.state.tr.setMeta(fileUploadKey, { removeId: id }));
 };
 
-// The link lands where the card was shown (which can be mid-textblock) and
-// carries the probed video dimensions so the embed reserves its exact box.
+// The link lands where the card was shown (which can be mid-textblock).
 const completeFileUpload = (view, id, url) =>
   finishUpload(view, id, (entry) => {
     const { state } = view;
     const widget = findUploadWidget(view, id);
     let tr = state.tr;
     if (widget) {
-      let href = url;
-      if (entry.dimensions) {
-        const { width, height } = entry.dimensions;
-        href += `${href.includes("?") ? "&" : "?"}cw_video_ar=${width}x${height}`;
-      }
-      const mark = state.schema.marks.link.create({ href });
+      const mark = state.schema.marks.link.create({ href: url });
       const paragraph = state.schema.nodes.paragraph.create(
         null,
         state.schema.text(entry.name || url, [mark])
@@ -329,30 +323,6 @@ const reconcileFileUpload = (view, id) => {
   if (!getUpload(id)) return;
   if (view.isDestroyed || !findUploadWidget(view, id)) abandonUpload(id);
 };
-
-// Read the video's dimensions from the local file so the embed can reserve
-// its exact box from the first paint. Resolves null on failure or timeout.
-const probeVideoSize = (file) =>
-  new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const probe = document.createElement("video");
-    const done = (size) => {
-      clearTimeout(timer);
-      probe.removeAttribute("src");
-      URL.revokeObjectURL(url);
-      resolve(size);
-    };
-    const timer = setTimeout(() => done(null), 2000);
-    probe.preload = "metadata";
-    probe.onloadedmetadata = () =>
-      done(
-        probe.videoWidth && probe.videoHeight
-          ? { width: probe.videoWidth, height: probe.videoHeight }
-          : null
-      );
-    probe.onerror = () => done(null);
-    probe.src = url;
-  });
 
 // Upload video files with an inline progress card at the caret; on success
 // the card becomes a lone paragraph linking the file name to the uploaded URL
@@ -372,9 +342,6 @@ export const insertFileUploads = (view, files, { upload }) => {
           complete: (url) => completeFileUpload(view, id, url),
         }),
       remove: () => removeUploadWidget(view, id),
-    });
-    probeVideoSize(file).then((dimensions) => {
-      if (dimensions) patchUpload(id, { dimensions });
     });
     const widget = Decoration.widget(
       view.state.selection.from,

@@ -597,7 +597,10 @@ li.ProseMirror-selectednode:after {
 // Doubled class beats the app-side `.cw-embed-preview` max-width cap.
 .ProseMirror .cw-embed-preview.cw-embed-preview--removable {
   position: relative;
-  display: inline-block;
+  // Block so consecutive previews stack (the source lines between them are
+  // hidden); fit-content so the corner controls still hug the video.
+  display: block;
+  width: fit-content;
   max-width: 100%;
   // Template whitespace would add a line box below the player, pushing the
   // corner controls outside the video. Same fix as .pm-image-wrapper.

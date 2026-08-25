@@ -71,9 +71,9 @@ const stripParams = (url, names) => {
   return kept.length ? `${url.slice(0, at)}?${kept.join("&")}` : url.slice(0, at);
 };
 
-// Sizing params are presentation only; widget identity ignores them so a
+// The width param is presentation only; widget identity ignores it so a
 // resize never remounts a playing video.
-const stripEmbedParams = url => stripParams(url, ["cw_video_width", "cw_video_ar"]);
+const stripEmbedParams = url => stripParams(url, ["cw_video_width"]);
 
 const withWidthParam = (url, px) => {
   const base = stripParams(url, ["cw_video_width"]);
@@ -83,11 +83,6 @@ const withWidthParam = (url, px) => {
 const embedWidth = url => {
   const match = url.match(/[?&]cw_video_width=(\d+)px(?:&|$)/);
   return match ? Number(match[1]) : null;
-};
-
-const embedRatio = url => {
-  const match = url.match(/[?&]cw_video_ar=(\d{1,5})x(\d{1,5})(?:&|$)/);
-  return match ? `${match[1]} / ${match[2]}` : null;
 };
 
 // Persist a resize by rewriting the hidden source link's href; the width param
@@ -175,11 +170,6 @@ const buildEmbedWidget = (html, { selectSource = false, url = "" } = {}) => (vie
   wrapper.innerHTML = html;
   const savedWidth = url && embedWidth(url);
   if (savedWidth) wrapper.style.width = `${savedWidth}px`;
-  const savedRatio = url && embedRatio(url);
-  if (savedRatio) {
-    const media = wrapper.querySelector("video");
-    if (media) media.style.aspectRatio = savedRatio;
-  }
   // innerHTML doesn't execute <script> tags — re-create them so they do.
   wrapper.querySelectorAll("script").forEach(stale => {
     const fresh = document.createElement("script");
