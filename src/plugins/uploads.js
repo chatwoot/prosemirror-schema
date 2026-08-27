@@ -85,6 +85,23 @@ const deleteUploadImages = (view, id) => {
   deleteImages(view, findUploadImages(view.state.doc, id, entry.objectUrl));
 };
 
+// Mirroring enhances an already-valid image, and its tag can cover
+// pre-existing duplicates of the pasted URL — so cancelling only clears the
+// transient tag and keeps every image.
+const clearImageUploadTags = (view, id) => {
+  if (view.isDestroyed) return;
+  const matches = findImages(
+    view.state.doc,
+    (node) => node.attrs.uploadId === id
+  );
+  if (!matches.length) return;
+  const tr = view.state.tr;
+  matches.forEach(({ node, pos }) => {
+    tr.setNodeMarkup(pos, null, { ...node.attrs, uploadId: null });
+  });
+  view.dispatch(tr.setMeta("addToHistory", false));
+};
+
 const swapUploadedImages = (view, id, url) =>
   finishUpload(view, id, (entry) => {
     const matches = findUploadImages(view.state.doc, id, entry.objectUrl);
@@ -93,7 +110,9 @@ const swapUploadedImages = (view, id, url) =>
     matches.forEach(({ node, pos }) => {
       tr.setNodeMarkup(pos, null, { ...node.attrs, src: url, uploadId: null });
     });
-    view.dispatch(tr);
+    // Async completion, not a user edit: keep it out of history so undo
+    // can't resurrect the unserializable blob preview.
+    view.dispatch(tr.setMeta("addToHistory", false));
   });
 
 const runImageUpload = (view, id, request, progress = null) =>
@@ -193,10 +212,10 @@ export const mirrorExternalImages = (view, urls, { upload }) => {
     registerUpload(id, {
       kind: "image",
       run: () => runImageUpload(view, id, (signal) => upload(src, signal)),
-      remove: () => deleteUploadImages(view, id),
+      remove: () => clearImageUploadTags(view, id),
     });
   });
-  view.dispatch(tr);
+  view.dispatch(tr.setMeta("addToHistory", false));
   assignments.forEach((id) => getUpload(id).run());
 };
 
@@ -327,10 +346,29 @@ const reconcileFileUpload = (view, id) => {
 // Upload video files with an inline progress card at the caret; on success
 // the card becomes a lone paragraph linking the file name to the uploaded URL
 // (the mp4 embed matches the href, so a player renders in its place).
+// Completions flush in selection order: a finished file waits while an
+// earlier pick is still uploading, so multi-file uploads keep their order.
 // `upload` is (file, onProgress, signal) => Promise<url>.
 export const insertFileUploads = (view, files, { upload }) => {
-  Array.from(files).forEach((file) => {
-    const id = newUploadId();
+  const batch = Array.from(files).map((file) => ({
+    file,
+    id: newUploadId(),
+    url: null,
+    inserted: false,
+  }));
+  const flush = () => {
+    for (const item of batch) {
+      if (item.inserted) continue;
+      if (item.url) {
+        item.inserted = true;
+        completeFileUpload(view, item.id, item.url);
+      } else if (getUpload(item.id)?.status === "uploading") {
+        return;
+      }
+      // Failed or removed entries don't block the files behind them.
+    }
+  };
+  batch.forEach(({ id, file }) => {
     registerUpload(id, {
       kind: "file",
       name: file.name,
@@ -339,7 +377,10 @@ export const insertFileUploads = (view, files, { upload }) => {
         runUpload(id, {
           progress: 0,
           request: fileRequest(id, file, upload),
-          complete: (url) => completeFileUpload(view, id, url),
+          complete: (url) => {
+            batch.find((item) => item.id === id).url = url;
+            flush();
+          },
         }),
       remove: () => removeUploadWidget(view, id),
     });
@@ -352,7 +393,10 @@ export const insertFileUploads = (view, files, { upload }) => {
         side: -1,
         destroy: (dom) => {
           dom.pmUploadCleanup?.();
-          queueMicrotask(() => reconcileFileUpload(view, id));
+          queueMicrotask(() => {
+            reconcileFileUpload(view, id);
+            flush();
+          });
         },
       }
     );
