@@ -36,10 +36,13 @@ const startCornerResize = (handle, event, { target, containerWidth, minPx, onCom
   }
 };
 
+const RESIZE_KEY_STEP = 16;
+
 // Shared corner chip for images and embeds. `getOptions(event)` returns the
-// drag options, or a falsy value to ignore the press.
+// resize options, or a falsy value to ignore the interaction.
 export const buildResizeHandle = (label, getOptions) => {
-  const handle = document.createElement("span");
+  const handle = document.createElement("button");
+  handle.type = "button";
   handle.className = "pm-resize-handle";
   handle.contentEditable = "false";
   handle.setAttribute("aria-label", label);
@@ -49,6 +52,22 @@ export const buildResizeHandle = (label, getOptions) => {
     event.stopPropagation();
     const options = getOptions(event);
     if (options) startCornerResize(handle, event, options);
+  });
+  // Keyboard resize: right/up grows, left/down shrinks.
+  handle.addEventListener("keydown", (event) => {
+    const grow = event.key === "ArrowRight" || event.key === "ArrowUp";
+    if (!grow && event.key !== "ArrowLeft" && event.key !== "ArrowDown") return;
+    const options = getOptions(event);
+    if (!options) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const { target, containerWidth, minPx, onCommit } = options;
+    const width =
+      Math.round(target.getBoundingClientRect().width) +
+      (grow ? RESIZE_KEY_STEP : -RESIZE_KEY_STEP);
+    const widthPx = Math.max(minPx, Math.min(containerWidth, width));
+    target.style.width = `${widthPx}px`;
+    onCommit(widthPx);
   });
   return handle;
 };
