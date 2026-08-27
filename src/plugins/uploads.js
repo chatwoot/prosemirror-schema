@@ -64,13 +64,15 @@ const findUploadImages = (doc, id, objectUrl) =>
   );
 
 // Delete bottom-up so earlier deletes don't shift later positions.
+// Previews aren't real content: their deletion must not create a history
+// step, or undo would revive an image whose upload no longer exists.
 const deleteImages = (view, matches) => {
   if (!matches.length) return;
   const tr = view.state.tr;
   matches
     .sort((a, b) => b.pos - a.pos)
     .forEach(({ node, pos }) => tr.delete(pos, pos + node.nodeSize));
-  view.dispatch(tr);
+  view.dispatch(tr.setMeta("addToHistory", false));
 };
 
 export const deleteImagesBySrc = (view, src) =>
@@ -171,15 +173,14 @@ export const insertImageFiles = (view, files, { upload }) => {
     for (const { id, objectUrl } of queue) {
       await preloadImage(objectUrl, 3000);
       if (!getUpload(id)) continue;
-      if (view.isDestroyed) {
+      // A missing anchor means the document was rebuilt (e.g. an external
+      // reset) while the preview decoded — the files no longer belong there.
+      const pos = view.isDestroyed ? null : insertAnchorPos(view, anchor);
+      if (pos === null) {
         releaseUpload(id);
         continue;
       }
-      insertImageNode(
-        view,
-        { src: objectUrl, uploadId: id },
-        insertAnchorPos(view, anchor)
-      );
+      insertImageNode(view, { src: objectUrl, uploadId: id }, pos);
       getUpload(id).run();
     }
     dropInsertAnchor(view, anchor);
@@ -283,8 +284,7 @@ const addInsertAnchor = (view) => {
 };
 
 const insertAnchorPos = (view, id) =>
-  fileUploadKey.getState(view.state)?.anchors.get(id) ??
-  view.state.selection.from;
+  fileUploadKey.getState(view.state)?.anchors.get(id) ?? null;
 
 const dropInsertAnchor = (view, id) => {
   if (view.isDestroyed) return;
