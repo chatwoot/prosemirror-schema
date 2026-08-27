@@ -594,6 +594,12 @@ li.ProseMirror-selectednode:after {
   display: none;
 }
 
+// Keyboard selection lands on the hidden source line; show it on the
+// preview widget that stands in for it (its next sibling in the DOM).
+.ProseMirror .cw-embed-source-hidden.ProseMirror-selectednode + .cw-embed-preview.cw-embed-preview--removable::after {
+  opacity: 1;
+}
+
 // Doubled class beats the app-side `.cw-embed-preview` max-width cap.
 .ProseMirror .cw-embed-preview.cw-embed-preview--removable {
   position: relative;

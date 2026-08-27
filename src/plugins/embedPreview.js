@@ -1,4 +1,10 @@
-import { NodeSelection, Plugin, PluginKey, TextSelection } from "prosemirror-state";
+import {
+  NodeSelection,
+  Plugin,
+  PluginKey,
+  Selection,
+  TextSelection,
+} from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 
 import { getUploadLabels } from "./uploadState";
@@ -246,6 +252,84 @@ const deleteEmbedBefore = (view, embeds) => {
   return true;
 };
 
+const isHiddenSource = (node, embeds) => {
+  if (!node) return false;
+  const url = getLoneLinkUrl(node);
+  return url ? Boolean(findEmbed(embeds, url)?.hideSource) : false;
+};
+
+const hiddenSourceAt = (doc, index, embeds) =>
+  index >= 0 &&
+  index < doc.childCount &&
+  isHiddenSource(doc.child(index), embeds);
+
+const blockStart = (doc, index) => {
+  let pos = 0;
+  for (let i = 0; i < index; i += 1) pos += doc.child(i).nodeSize;
+  return pos;
+};
+
+// Arrows treat an embed like a block: they step onto it (node selection,
+// shown as a ring on the player), then past it. At the document's edge a
+// paragraph is created so there is always a line above and below a video.
+const arrowPastEmbed = (view, key, embeds) => {
+  const forward = key === "ArrowRight" || key === "ArrowDown";
+  const { selection, doc } = view.state;
+  const { $from } = selection;
+  const onEmbed =
+    selection instanceof NodeSelection &&
+    isHiddenSource(selection.node, embeds);
+
+  if (!onEmbed) {
+    if (!(selection instanceof TextSelection) || !selection.empty) return false;
+    if ($from.depth !== 1) return false;
+    const atEdge =
+      key === "ArrowUp" || key === "ArrowDown"
+        ? view.endOfTextblock(forward ? "down" : "up")
+        : $from.parentOffset === (forward ? $from.parent.content.size : 0);
+    const next = $from.index(0) + (forward ? 1 : -1);
+    // A caret inside the invisible line itself always steps out.
+    if (
+      !isHiddenSource($from.parent, embeds) &&
+      !(atEdge && hiddenSourceAt(doc, next, embeds))
+    ) {
+      return false;
+    }
+  }
+
+  const target = $from.index(0) + (forward ? 1 : -1);
+  const tr = view.state.tr;
+  if (target < 0 || target >= doc.childCount) {
+    const pos = target < 0 ? 0 : doc.content.size;
+    tr.insert(pos, view.state.schema.nodes.paragraph.create());
+    tr.setSelection(TextSelection.create(tr.doc, pos + 1));
+  } else if (hiddenSourceAt(doc, target, embeds)) {
+    tr.setSelection(NodeSelection.create(doc, blockStart(doc, target)));
+  } else {
+    const pos =
+      blockStart(doc, target) +
+      (forward ? 1 : doc.child(target).nodeSize - 1);
+    tr.setSelection(Selection.near(tr.doc.resolve(pos), forward ? 1 : -1));
+  }
+  view.dispatch(tr.scrollIntoView());
+  return true;
+};
+
+// Enter on a selected embed starts a fresh line under the player.
+const insertParagraphBelowSelectedEmbed = (view, embeds) => {
+  const { selection } = view.state;
+  if (!(selection instanceof NodeSelection)) return false;
+  if (!isHiddenSource(selection.node, embeds)) return false;
+  const after = selection.$from.pos + selection.node.nodeSize;
+  const tr = view.state.tr.insert(
+    after,
+    view.state.schema.nodes.paragraph.create()
+  );
+  tr.setSelection(TextSelection.create(tr.doc, after + 1));
+  view.dispatch(tr.scrollIntoView());
+  return true;
+};
+
 const insertParagraphAfterEmbed = (state, dispatch, embeds) => {
   if (!isTopLevelTextSelection(state.selection)) return false;
   const { schema } = state;
@@ -269,19 +353,31 @@ export const embedPreviewKey = new PluginKey("embedPreview");
 export default function embedPreviewPlugin(embeds = []) {
   return new Plugin({
     key: embedPreviewKey,
+    // A doc ending with a hidden source line leaves no visible spot below the
+    // player — keep a paragraph after it, like trailingParagraphPlugin does
+    // for atoms.
+    appendTransaction(transactions, _oldState, newState) {
+      if (!transactions.some(tr => tr.docChanged)) return null;
+      const { doc, schema } = newState;
+      if (!isHiddenSource(doc.lastChild, embeds)) return null;
+      return newState.tr.insert(
+        doc.content.size,
+        schema.nodes.paragraph.create()
+      );
+    },
     state: {
       init(_, { doc }) {
         const items = collectEmbeds(doc, embeds);
-        return { set: buildSet(doc, items), signature: signatureOf(items) };
+        return { set: buildSet(doc, items), signature: signatureOf(items), items };
       },
       apply(tr, old) {
         if (!tr.docChanged) return old;
         const items = collectEmbeds(tr.doc, embeds);
         const signature = signatureOf(items);
         if (signature === old.signature) {
-          return { set: old.set.map(tr.mapping, tr.doc), signature };
+          return { set: old.set.map(tr.mapping, tr.doc), signature, items };
         }
-        return { set: buildSet(tr.doc, items), signature };
+        return { set: buildSet(tr.doc, items), signature, items };
       },
     },
     // Back online, reload any player that died while the connection was down.
@@ -301,6 +397,22 @@ export default function embedPreviewPlugin(embeds = []) {
       };
       window.addEventListener("online", reloadFailedMedia);
       return {
+        // Widget identity ignores sizing params so a resize never remounts a
+        // playing video — the trade-off is that undo/redo of a resize keeps
+        // the old wrapper. Sync its width to the document instead.
+        update(view) {
+          const { items } = embedPreviewKey.getState(view.state);
+          if (!items.length) return;
+          view.dom
+            .querySelectorAll(".cw-embed-preview")
+            .forEach((el, index) => {
+              const item = items[index];
+              if (!item) return;
+              const width = embedWidth(item.url);
+              const target = width ? `${width}px` : "";
+              if (el.style.width !== target) el.style.width = target;
+            });
+        },
         destroy: () => window.removeEventListener("online", reloadFailedMedia),
       };
     },
@@ -312,7 +424,10 @@ export default function embedPreviewPlugin(embeds = []) {
         if (event.shiftKey || event.metaKey || event.ctrlKey || event.altKey)
           return false;
         if (event.key === "Backspace") return deleteEmbedBefore(view, embeds);
+        if (event.key.startsWith("Arrow"))
+          return arrowPastEmbed(view, event.key, embeds);
         if (event.key !== "Enter") return false;
+        if (insertParagraphBelowSelectedEmbed(view, embeds)) return true;
         return insertParagraphAfterEmbed(
           view.state,
           tr => view.dispatch(tr),
