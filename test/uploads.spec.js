@@ -1,15 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EditorState } from 'prosemirror-state';
 
-import { fileUploadPlugin, insertFileUploads } from '../src/plugins/uploads';
+import {
+  fileUploadPlugin,
+  hasActiveUploads,
+  insertFileUploads,
+  insertImageFiles,
+} from '../src/plugins/uploads';
 import { getUpload } from '../src/plugins/uploadState';
+import { fullSchema } from '../src/schema/article';
 import { messageSchema } from '../src/schema/message';
 
-// insertFileUploads only touches state/dispatch/isDestroyed, so a functional
+// The upload pipelines only touch state/dispatch/isDestroyed, so a functional
 // fake view keeps this headless — the widget's toDOM is lazy and never runs.
-const makeView = plugin => {
+const makeView = (plugin, schema = messageSchema) => {
   const view = {
-    state: EditorState.create({ schema: messageSchema, plugins: [plugin] }),
+    state: EditorState.create({ schema, plugins: [plugin] }),
     isDestroyed: false,
     dispatch(tr) {
       view.state = view.state.apply(tr);
@@ -53,5 +59,45 @@ describe('insertFileUploads', () => {
     const cards = plugin.getState(view.state).set.find();
     expect(cards).toHaveLength(1);
     expect(getUpload(cards[0].spec.uploadId).status).toBe('error');
+  });
+});
+
+describe('insertImageFiles', () => {
+  const decodes = [];
+  class FakeImage {
+    decode() {
+      return new Promise(resolve => decodes.push(resolve));
+    }
+  }
+
+  beforeEach(() => {
+    decodes.length = 0;
+    vi.stubGlobal('Image', FakeImage);
+    vi.stubGlobal('URL', { createObjectURL: () => 'blob:test' });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('counts a picked image as active while it is still decoding', async () => {
+    const plugin = fileUploadPlugin();
+    // The article schema declares the uploadId attr the image pipeline uses.
+    const view = makeView(plugin, fullSchema);
+    insertImageFiles(view, [{ name: 'pic.png', size: 1 }], {
+      upload: () => new Promise(() => {}),
+    });
+
+    // No node or card exists yet — the insert anchor covers this window.
+    expect(hasActiveUploads(view)).toBe(true);
+
+    decodes[0]();
+    await settle();
+    const images = [];
+    view.state.doc.descendants(node => {
+      if (node.type.name === 'image') images.push(node);
+    });
+    expect(images).toHaveLength(1);
+    expect(hasActiveUploads(view)).toBe(true);
   });
 });

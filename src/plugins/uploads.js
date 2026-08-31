@@ -304,8 +304,11 @@ const findUploadWidget = (view, id) => {
 // count: an explicit external reset (e.g. discarding a draft) must win, and
 // the rebuild reconciles their leftovers away.
 export const hasActiveUploads = (view) => {
+  const state = fileUploadKey.getState(view.state);
+  // Anchors exist while picked images decode, before their previews insert.
+  if (state?.anchors.size) return true;
   const inFlight = (id) => getUpload(id)?.status === "uploading";
-  const cards = fileUploadKey.getState(view.state)?.set.find() || [];
+  const cards = state?.set.find() || [];
   if (cards.some((deco) => inFlight(deco.spec.uploadId))) return true;
   let found = false;
   view.state.doc.descendants((node) => {
