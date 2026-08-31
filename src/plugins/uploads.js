@@ -12,6 +12,7 @@ import {
   releaseUpload,
   removeUpload,
   runUpload,
+  subscribeUpload,
 } from "./uploadState";
 
 // Insert a block node as close to $pos as the structure allows: before/after
@@ -383,6 +384,10 @@ export const insertFileUploads = (view, files, { upload }) => {
           },
         }),
       remove: () => removeUploadWidget(view, id),
+    });
+    // A failure unblocks the finished files queued behind it.
+    subscribeUpload(id, ({ status }) => {
+      if (status === "error") flush();
     });
     const widget = Decoration.widget(
       view.state.selection.from,
