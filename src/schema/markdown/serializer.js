@@ -53,13 +53,15 @@ const adjacentToBlock = (parent, index) =>
 // The visual line starting at `start`: its text (joining consecutive text
 // siblings, since marks split a line into multiple text nodes) and whether
 // that run closes the line — an atom sibling (image/mention) continues it.
+// A whitespace-only marked node does not count as marked: the serializer
+// expels enclosing whitespace, so it emits no mark syntax into the line.
 const lineFrom = (parent, start) => {
   const rest = childrenOf(parent).slice(start);
   const stop = rest.findIndex(child => !child.isText);
   const run = stop < 0 ? rest : rest.slice(0, stop);
   return {
     text: run.map(child => child.text).join(''),
-    marked: run.some(child => child.marks.length > 0),
+    marked: run.some(child => child.marks.length > 0 && child.text.trim()),
     closed: stop < 0 || rest[stop].type.name === 'hard_break',
   };
 };
@@ -210,6 +212,9 @@ export const paragraph = (state, node, parent, index) => {
   if (isUnderline(nextLine)) {
     return state.write(isEmptyParagraph(parent.child(index + 1)) ? '\\\n' : '\\\n\\');
   }
+  // An underline the escape cannot reach (indented) must not be glued either —
+  // it would read the glue line as a heading. Detach it with a plain newline.
+  if (isIndentedUnderline(nextLine)) return state.write('\n');
   state.write(startsWithMarkdownSyntax(nextLine.text) ? '\n' : '\\\n');
 };
 export const image = (state, node) => {

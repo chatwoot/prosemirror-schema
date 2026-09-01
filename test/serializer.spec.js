@@ -92,6 +92,20 @@ describe('hard_break', () => {
     );
   });
 
+  // A whitespace-only marked node is expelled from the mark syntax on
+  // serialize, so it must not make an underline count as marked.
+  it('detaches an underline led by a bold space', () => {
+    expect(
+      serialize(doc(p(t('a'), br(), t(' ', [mark('strong')]), t('--'))))
+    ).toBe('a\n\n --');
+  });
+
+  it('escapes an underline trailed by a bold space', () => {
+    expect(
+      serialize(doc(p(t('a'), br(), t('--'), t(' ', [mark('strong')]))))
+    ).toBe('a\\\n\\-- ');
+  });
+
   it('keeps the backslash for a mid-sentence link that is not a list', () => {
     const result = serialize(
       doc(p(t('see'), br(), t('this '), t(URL, [mark('link', { href: URL })])))
@@ -242,6 +256,28 @@ describe('paragraph', () => {
     expect(serialize(doc(p(t('a')), p(), p(t('--', [mark('strong')]))))).toBe(
       'a\n\n\\\n**--**'
     );
+  });
+
+  it('detaches an underline led by a bold space below an empty line', () => {
+    expect(
+      serialize(doc(p(t('a')), p(), p(t(' ', [mark('strong')]), t('--'))))
+    ).toBe('a\n\n\n --');
+  });
+
+  it('detaches an equals underline led by an italic space below an empty line', () => {
+    expect(
+      serialize(doc(p(t('a')), p(), p(t(' ', [mark('em')]), t('=='))))
+    ).toBe('a\n\n\n ==');
+  });
+
+  it('escapes an underline trailed by a bold space below an empty line', () => {
+    expect(
+      serialize(doc(p(t('a')), p(), p(t('--'), t(' ', [mark('strong')]))))
+    ).toBe('a\n\n\\\n\\-- ');
+  });
+
+  it('detaches an indented equals underline below an empty line', () => {
+    expect(serialize(doc(p(t('a')), p(), p(t(' =='))))).toBe('a\n\n\n ==');
   });
 
   it('keeps a lone dash as a list marker when an image continues its line', () => {
@@ -756,6 +792,12 @@ describe('strict CommonMark render agreement', () => {
 
   it('parses an equals underline below an empty line as literal text', () => {
     expect(render(doc(p(t('a')), p(), p(t('=='))))).toBe('<p>a</p>\n<p><br />\n==</p>\n');
+  });
+
+  it('parses an underline led by an expelled bold space as literal text', () => {
+    expect(render(doc(p(t('a')), p(), p(t(' ', [mark('strong')]), t('--'))))).toBe(
+      '<p>a</p>\n<p>--</p>\n'
+    );
   });
 });
 
