@@ -18,7 +18,13 @@ tableNodeSpecs.table.parseDOM = [
 const baseImage = schema.spec.nodes.get('image');
 const image = {
   ...baseImage,
-  attrs: { ...baseImage.attrs, width: { default: null } },
+  // uploadId ties a node to an in-flight upload; it never reaches toDOM or
+  // the serializer, so it can't leak into saved content.
+  attrs: {
+    ...baseImage.attrs,
+    width: { default: null },
+    uploadId: { default: null },
+  },
   parseDOM: [{
     tag: 'img[src]',
     getAttrs: dom => ({

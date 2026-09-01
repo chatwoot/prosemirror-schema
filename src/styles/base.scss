@@ -285,6 +285,12 @@ li.ProseMirror-selectednode:after {
     cursor: text;
   }
 
+  // Upload cards are widget decorations, so the doc still counts as empty
+  // while one is pending; hide the placeholder instead of painting under it.
+  p.empty-node:has(.pm-upload-card)::before {
+    content: none;
+  }
+
   // An image sits alone in its paragraph, so ProseMirror adds a trailing <br>
   // for the caret; with the 1.4 line-height that renders a blank line below the
   // image. Collapse it so the image sits flush (the image keeps its own height).
@@ -292,8 +298,7 @@ li.ProseMirror-selectednode:after {
     line-height: 0;
   }
 
-  // Image resize wrapper + diagonal handle (bottom-right corner). Shared by
-  // every editor variant that registers the imageResizeView NodeView.
+  // Image resize wrapper (any editor that registers imageResizeView).
   .pm-image-wrapper {
     position: relative;
     display: inline-block;
@@ -305,34 +310,352 @@ li.ProseMirror-selectednode:after {
     // to fill the wrapper so the corner handle stays anchored to its edge.
     &[style*="width"] img { width: 100%; }
 
-    // Subtle light-blue outline on hover so the image's edges
     &:hover { outline: 2px solid rgba(59, 130, 246, 0.5); outline-offset: -2px; }
 
-    .pm-image-resize-handle {
+    &:hover .pm-resize-handle,
+    &.ProseMirror-selectednode .pm-resize-handle { opacity: 1; }
+  }
+
+  // Corner resize chip shared by images and video embeds; the host wrapper's
+  // hover reveals it. The inset ring keeps it readable over dark video chrome.
+  .pm-resize-handle {
+    position: absolute;
+    inset-inline-end: 8px;
+    bottom: 8px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    color: #fff;
+    background: rgb(17 18 20 / 0.75);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4);
+    border-radius: 6px;
+    cursor: nwse-resize;
+    touch-action: none;
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s;
+
+    svg { width: 12px; height: 12px; pointer-events: none; }
+    &:hover { background: rgb(17 18 20 / 0.85); }
+
+    [dir="rtl"] & {
+      cursor: nesw-resize;
+      svg { transform: scaleX(-1); }
+    }
+  }
+}
+
+// Dashboard xs icon-only button recipe, shared by the upload chips.
+@mixin upload-chip($size) {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: $size;
+  height: $size;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.1s ease-out;
+
+  &:active { scale: 0.97; }
+}
+
+// Upload UI: the status pill over in-flight images and the video card.
+// Colors consume the dashboard tokens (--slate-*, --ruby-*) with light-theme
+// fallbacks; the pill keeps fixed dark glass — it sits over image pixels.
+.ProseMirror {
+  .pm-image-wrapper.pm-image-uploading .pm-resize-handle { display: none; }
+
+  // External mirrors have no local preview to define the box — reserve a
+  // footprint so the pill stays visible even if the source can't render.
+  .pm-image-wrapper.pm-image-uploading-external {
+    min-width: 220px;
+    min-height: 96px;
+    background: rgb(var(--slate-3, 240 240 243));
+  }
+
+  .pm-upload-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: visible;
+    background: rgb(17 18 20 / 0.32);
+    transition: opacity 0.18s ease;
+
+    &[data-state="error"] { background: rgb(17 18 20 / 0.52); }
+    &.pm-upload-done { opacity: 0; pointer-events: none; }
+  }
+
+  // On a small image the pill floats over the edges instead of squeezing.
+  .pm-upload-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    max-width: 300px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.35;
+    background: rgb(17 18 20 / 0.82);
+    border-radius: 10px;
+    backdrop-filter: blur(4px);
+  }
+
+  .pm-upload-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+  }
+
+  .pm-upload-text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // Eight dots fading in sequence around a ring.
+  .pm-upload-spinner {
+    position: relative;
+    flex: none;
+    width: 14px;
+    height: 14px;
+
+    span {
       position: absolute;
-      inset-inline-end: 8px;
-      bottom: 8px;
-      display: grid;
-      place-items: center;
-      width: 22px;
-      height: 22px;
-      color: #fff;
-      background: rgba(0, 0, 0, 0.65);
-      border-radius: 6px;
-      cursor: nwse-resize;
-      opacity: 0;
-      transition: opacity 0.12s, background 0.12s;
-
-      svg { width: 12px; height: 12px; pointer-events: none; }
-      &:hover { background: rgba(0, 0, 0, 0.8); }
-
-      [dir="rtl"] & {
-        cursor: nesw-resize;
-        svg { transform: scaleX(-1); }
-      }
+      top: 0;
+      left: 50%;
+      width: 3px;
+      height: 3px;
+      margin-left: -1.5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.15;
+      transform-origin: 50% 7px;
+      animation: pm-upload-spinner-fade 0.8s ease-in-out infinite;
     }
 
-    &:hover .pm-image-resize-handle,
-    &.ProseMirror-selectednode .pm-image-resize-handle { opacity: 1; }
+    @for $i from 1 through 8 {
+      span:nth-child(#{$i}) {
+        transform: rotate(#{($i - 1) * 45}deg);
+        animation-delay: #{($i - 8) * 0.1}s;
+      }
+    }
   }
+
+  .pm-upload-cancel {
+    @include upload-chip(18px);
+    color: rgb(255 255 255 / 0.7);
+    background: rgb(255 255 255 / 0.12);
+    border-radius: 50%;
+
+    svg { width: 10px; height: 10px; }
+
+    &:hover,
+    &:focus-visible { color: #fff; background: rgb(255 255 255 / 0.24); }
+  }
+
+  // Error copy is longer — let it wrap, and swap cancel/spinner for retry/remove.
+  .pm-upload-overlay[data-state="error"] {
+    .pm-upload-text { white-space: normal; }
+    .pm-upload-spinner,
+    .pm-upload-cancel { display: none; }
+  }
+
+  .pm-upload-overlay:not([data-state="error"]) .pm-upload-actions { display: none; }
+
+  .pm-upload-actions {
+    display: inline-flex;
+    gap: 6px;
+  }
+
+  // Retry/remove after an error: ruby outline variant.
+  .pm-upload-action {
+    @include upload-chip(24px);
+    color: rgb(var(--ruby-11, 202 36 77));
+    background: transparent;
+    border-radius: 8px;
+    outline: 1px solid rgb(var(--ruby-8, 229 146 163));
+
+    svg { width: 16px; height: 16px; }
+
+    &:hover,
+    &:focus-visible { background: rgb(var(--ruby-9, 229 70 102) / 0.1); }
+  }
+
+  // The pill is fixed dark glass, so its chips use the dark-theme ruby values
+  // in both themes — the themed tokens would vanish over it in light mode.
+  .pm-upload-pill .pm-upload-action {
+    color: rgb(255 148 157);
+    outline-color: rgb(179 68 90);
+
+    &:hover,
+    &:focus-visible { background: rgb(229 70 102 / 0.2); }
+  }
+
+  .pm-upload-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    max-width: 420px;
+    margin: 8px 0;
+    padding: 10px 12px;
+    line-height: 1.4;
+    color: rgb(var(--slate-12, 28 32 36));
+    background: rgb(var(--slate-2, 249 249 251));
+    border: 1px solid rgb(var(--slate-6, 217 217 224));
+    border-radius: 10px;
+    user-select: none;
+
+    &[data-state="error"] {
+      border-color: rgb(var(--ruby-9, 229 70 102) / 0.5);
+      background: rgb(var(--ruby-9, 229 70 102) / 0.05);
+
+      .pm-upload-cancel,
+      .pm-upload-spinner { display: none; }
+      .pm-upload-card-icon {
+        color: rgb(var(--ruby-9, 229 70 102));
+        background: rgb(var(--ruby-9, 229 70 102) / 0.12);
+      }
+      .pm-upload-card-meta { color: rgb(var(--ruby-9, 229 70 102)); }
+      .pm-upload-text { white-space: normal; }
+    }
+
+    &:not([data-state="error"]) .pm-upload-actions { display: none; }
+
+    // On the themed card the cancel is a slate ghost, not the glass circle.
+    .pm-upload-cancel {
+      width: 24px;
+      height: 24px;
+      color: rgb(var(--slate-11, 96 100 108));
+      background: transparent;
+      border-radius: 8px;
+
+      svg { width: 12px; height: 12px; }
+
+      &:hover,
+      &:focus-visible {
+        color: rgb(var(--slate-12, 28 32 36));
+        background: rgba(var(--alpha-2, 196, 197, 198, 0.22));
+      }
+    }
+  }
+
+  .pm-upload-card-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    color: rgb(var(--slate-11, 96 100 108));
+    background: rgb(var(--slate-4, 232 232 236));
+    border-radius: 8px;
+
+    svg { width: 18px; height: 18px; }
+  }
+
+  .pm-upload-card-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .pm-upload-card-name {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .pm-upload-card-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: rgb(var(--slate-11, 96 100 108));
+  }
+}
+
+@keyframes pm-upload-spinner-fade {
+  0% { opacity: 1; scale: 1; }
+  100% { opacity: 0.15; scale: 0.55; }
+}
+
+// hide_source embeds keep the raw link line in the doc for serialization but
+// out of sight; the preview widget handles selection and removal.
+.ProseMirror .cw-embed-source-hidden {
+  display: none;
+}
+
+// Keyboard selection lands on the hidden source line; show it on the
+// preview widget that stands in for it (its next sibling in the DOM).
+.ProseMirror .cw-embed-source-hidden.ProseMirror-selectednode + .cw-embed-preview.cw-embed-preview--removable::after {
+  opacity: 1;
+}
+
+// Doubled class beats the app-side `.cw-embed-preview` max-width cap.
+.ProseMirror .cw-embed-preview.cw-embed-preview--removable {
+  position: relative;
+  // Block so consecutive previews stack (the source lines between them are
+  // hidden); fit-content so the corner controls still hug the video.
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  // Template whitespace would add a line box below the player, pushing the
+  // corner controls outside the video. Same fix as .pm-image-wrapper.
+  line-height: 0;
+
+  // A plain outline never paints over the composited <video> layer; this
+  // positioned overlay ring paints above it, like the corner chips do.
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(59, 130, 246, 0.7);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    pointer-events: none;
+  }
+
+  &:hover::after { opacity: 1; }
+
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  &[style*="width"] video { width: 100%; }
+
+  .cw-embed-remove {
+    @include upload-chip(24px);
+    position: absolute;
+    top: 8px;
+    inset-inline-end: 8px;
+    color: #fff;
+    background: rgb(17 18 20 / 0.75);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+
+    svg { width: 11px; height: 11px; }
+
+    &:hover { background: rgb(17 18 20 / 0.85); }
+    &:focus-visible {
+      opacity: 1;
+      outline: 2px solid rgb(var(--blue-9, 39 129 246));
+      outline-offset: 1px;
+    }
+  }
+
+  &:hover .cw-embed-remove,
+  &:hover .pm-resize-handle { opacity: 1; }
 }

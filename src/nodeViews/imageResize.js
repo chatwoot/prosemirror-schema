@@ -1,7 +1,9 @@
-const MIN_PX = 100;
+import { getUpload } from '../plugins/uploadState';
+import { reconcileImageUpload } from '../plugins/uploads';
+import { buildImageUploadOverlay } from './uploadOverlay';
+import { buildResizeHandle } from './cornerResize';
 
-// Diagonal-resize icon: two opposing corner brackets + connecting line.
-const HANDLE_SVG = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6 V2 H6"/><path d="M12 8 V12 H8"/><path d="M2 2 L12 12"/></svg>`;
+const MIN_PX = 100;
 
 class ImageResizeView {
   constructor(node, view, getPos) {
@@ -11,19 +13,38 @@ class ImageResizeView {
 
     this.dom = document.createElement('span');
     this.dom.className = 'pm-image-wrapper';
-
     this.img = document.createElement('img');
-    this.dom.appendChild(this.img);
+    this.handle = buildResizeHandle('Resize image', () => {
+      // A pasted image can sit in an inline ancestor (e.g. a link) whose
+      // clientWidth is 0; fall back to the editor width.
+      const containerWidth =
+        this.dom.parentElement?.clientWidth || this.view.dom.clientWidth;
+      if (!containerWidth) return null;
+      return {
+        target: this.dom,
+        containerWidth,
+        minPx: MIN_PX,
+        onCommit: widthPx => this.commitWidth(widthPx),
+      };
+    });
+    this.dom.append(this.img, this.handle);
 
-    this.handle = document.createElement('span');
-    this.handle.className = 'pm-image-resize-handle';
-    this.handle.contentEditable = 'false';
-    this.handle.setAttribute('aria-label', 'Resize image');
-    this.handle.innerHTML = HANDLE_SVG;
-    this.handle.addEventListener('mousedown', this.onMouseDown);
-    this.dom.appendChild(this.handle);
+    this.uploadId = null;
+    this.overlay = null;
 
     this.syncImg();
+    this.syncUpload();
+  }
+
+  commitWidth(widthPx) {
+    const pos = this.getPos();
+    if (pos == null) return;
+    this.view.dispatch(
+      this.view.state.tr.setNodeMarkup(pos, null, {
+        ...this.node.attrs,
+        width: `${widthPx}px`,
+      })
+    );
   }
 
   syncImg() {
@@ -34,58 +55,61 @@ class ImageResizeView {
     this.dom.style.width = width || '';
   }
 
-  onMouseDown = event => {
-    event.preventDefault();
-    // Pasted images can be wrapped in an inline ancestor (e.g. a link), whose
-    // clientWidth is 0; fall back to the editor width so resize still works.
-    const containerWidth =
-      this.dom.parentElement?.clientWidth || this.view.dom.clientWidth;
-    if (!containerWidth) return;
-    // In RTL the handle sits on the bottom-LEFT corner (via inset-inline-end),
-    // so outward motion is a NEGATIVE clientX delta. Flip the X contribution
-    // so dragging in the direction the icon points always grows the image.
-    const isRtl = getComputedStyle(this.dom).direction === 'rtl';
-    const xSign = isRtl ? -1 : 1;
-    const startW = this.dom.getBoundingClientRect().width;
-    const startX = event.clientX;
-    const startY = event.clientY;
-    let moved = false;
-    let widthPx = 0;
+  syncUpload() {
+    // Message-schema images have no uploadId attr — normalize to null.
+    const id = this.node.attrs.uploadId || null;
+    if (id === this.uploadId) return;
+    this.teardownUpload();
+    if (!id || !getUpload(id)) return;
+    this.uploadId = id;
+    this.overlay = buildImageUploadOverlay(id);
+    this.dom.appendChild(this.overlay);
+    this.dom.classList.add('pm-image-uploading');
+    // External mirrors have no local preview to define the box, so they get a
+    // reserved footprint; local blobs are decoded pre-insert and size exactly.
+    this.dom.classList.toggle(
+      'pm-image-uploading-external',
+      !getUpload(id).objectUrl
+    );
+  }
 
-    const onMove = e => {
-      moved = true;
-      const px = startW + xSign * (e.clientX - startX) + (e.clientY - startY);
-      widthPx = Math.max(MIN_PX, Math.min(containerWidth, Math.round(px)));
-      this.dom.style.width = `${widthPx}px`;
-    };
-
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      if (!moved) return;
-      const pos = this.getPos();
-      if (pos == null) return;
-      this.view.dispatch(
-        this.view.state.tr.setNodeMarkup(pos, null, { ...this.node.attrs, width: `${widthPx}px` })
-      );
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  };
+  teardownUpload() {
+    this.uploadId = null;
+    this.dom.classList.remove('pm-image-uploading', 'pm-image-uploading-external');
+    if (!this.overlay) return;
+    const overlay = this.overlay;
+    this.overlay = null;
+    overlay.pmUploadCleanup();
+    // Fade the overlay out instead of yanking it; the src swap underneath is
+    // preloaded, so the reveal is seamless.
+    overlay.classList.add('pm-upload-done');
+    setTimeout(() => overlay.remove(), 200);
+  }
 
   update(node) {
     if (node.type !== this.node.type) return false;
     this.node = node;
     this.syncImg();
+    this.syncUpload();
     return true;
   }
 
   selectNode() { this.dom.classList.add('ProseMirror-selectednode'); }
   deselectNode() { this.dom.classList.remove('ProseMirror-selectednode'); }
   ignoreMutation() { return true; }
-  stopEvent(event) { return this.handle.contains(event.target); }
-  destroy() { this.handle.removeEventListener('mousedown', this.onMouseDown); }
+  stopEvent(event) {
+    return (
+      this.handle.contains(event.target) ||
+      Boolean(this.overlay?.contains(event.target))
+    );
+  }
+  destroy() {
+    const { uploadId, view } = this;
+    this.teardownUpload();
+    if (uploadId) {
+      queueMicrotask(() => reconcileImageUpload(view, uploadId));
+    }
+  }
 }
 
 export const imageResizeView = (node, view, getPos) =>

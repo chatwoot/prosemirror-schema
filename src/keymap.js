@@ -29,6 +29,7 @@ import {
   joinUp,
   joinDown,
   selectParentNode,
+  selectAll,
   baseKeymap,
   deleteSelection,
   joinBackward,
@@ -116,7 +117,7 @@ export function baseKeyMaps(schema) {
 
   if (schema.nodes.table) {
     // Progressive Cmd+A: cell content → all cells → whole document
-    bind('Mod-a', (state, dispatch) => {
+    const progressiveTableSelectAll = (state, dispatch) => {
       const { $from, from, to } = state.selection;
       const tableDepth = findTableDepth($from, schema.nodes.table);
       if (tableDepth < 0) return false;
@@ -188,7 +189,10 @@ export function baseKeyMaps(schema) {
         }
       }
       return true;
-    });
+    };
+    // Outside a table the progressive command declines; fall back to the
+    // editor's select-all so the browser never selects the whole page.
+    bind('Mod-a', chainCommands(progressiveTableSelectAll, selectAll));
 
     // Backspace/Delete on CellSelection: delete selected rows, columns, or entire table
     const deleteCellSelection = (state, dispatch) => {

@@ -158,6 +158,8 @@ export const paragraph = (state, node, parent, index) => {
   }
 };
 export const image = (state, node) => {
+  // blob: srcs are in-flight upload previews — autosaves must never capture them.
+  if ((node.attrs.src || '').startsWith('blob:')) return;
   let src = state.esc(node.attrs.src);
   if (node.attrs.height) {
     const param = `cw_image_height=${node.attrs.height}`;
