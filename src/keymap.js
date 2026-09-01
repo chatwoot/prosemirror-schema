@@ -290,12 +290,12 @@ export function baseKeyMaps(schema) {
   if (schema.nodes.hard_break) {
     let br = schema.nodes.hard_break,
       cmd = chainCommands(exitCode, (state, dispatch) => {
-        dispatch(
-          state.tr
-            .insertText(` `)
-            .replaceSelectionWith(br.create())
-            .scrollIntoView()
-        );
+        // Upstream-default break insertion (marks inherited, so bold/italic
+        // continue across Shift+Enter). An old workaround inserted a space
+        // before every break to keep link marks off it, polluting messages
+        // with trailing spaces — the serializer now closes and reopens marks
+        // around breaks, so marked breaks serialize cleanly without it.
+        dispatch(state.tr.replaceSelectionWith(br.create()).scrollIntoView());
         return true;
       });
     bind('Mod-Enter', cmd);

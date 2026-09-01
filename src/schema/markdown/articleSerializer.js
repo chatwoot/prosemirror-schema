@@ -23,8 +23,16 @@ import {
   link,
   code,
 } from './serializer';
+import { splitTrailingBreaks } from './serializer';
 
-export const ArticleMarkdownSerializer = new MarkdownSerializerBase(
+// Same normalization as MessageMarkdownSerializer (see splitTrailingBreaks)
+class NormalizingMarkdownSerializer extends MarkdownSerializerBase {
+  serialize(content, options) {
+    return super.serialize(splitTrailingBreaks(content), options);
+  }
+}
+
+export const ArticleMarkdownSerializer = new NormalizingMarkdownSerializer(
   {
     blockquote,
     code_block,

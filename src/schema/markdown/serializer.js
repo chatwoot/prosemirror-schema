@@ -1,87 +1,135 @@
-// Block elements that handle their own spacing (no backslash needed adjacent to these)
+import { Fragment } from 'prosemirror-model';
+
+// Blocks that manage their own spacing — empty lines next to them need no glue
 const BLOCK_TYPES = new Set(['blockquote', 'code_block', 'bullet_list', 'ordered_list', 'heading', 'horizontal_rule', 'table']);
 
 const MARKDOWN_PATTERNS = {
-  // CommonMark list markers: "* ", "- ", "+ " or "1. ", "1) " (up to 9 digits)
-  // Bare marker at end also counts (rest of line may be image/mention nodes)
+  // List markers: "* ", "- ", "+ ", "1. ", "1) " — bare marker at line end included
   list: /^([*\-+]|\d{1,9}[.)])(\s|$)/,
-  // Block-level markdown syntax that should not be preceded by backslash
-  // Includes: blockquote (>), ATX headings (#), fenced code (``` or ~~~), thematic breaks (--, ---, ***, ___)
-  blockStart: /^(>\s?|#{1,6}\s|```|~~~|[-*_]{2,}$)/,
-  // Markdown table rows: lines starting with "|" (data rows, header rows, separator rows like |---|)
+  // Block starters: blockquote, ATX heading (a bare "#" is a valid empty
+  // heading and interrupts a paragraph), code fence, thematic break
+  blockStart: /^(>\s?|#{1,6}(\s|$)|```|~~~|[-*_]{2,}$)/,
   tableRow: /^\|/,
+  // Setext underline: a line of only "-" or "=" characters. cmark reads the
+  // line above it as a heading (`a\n-` → <h2>a</h2>), so glue backslashes
+  // must never sit on top of one unescaped.
+  setextUnderline: /^(-+|=+)[ \t]*$/,
+  // CommonMark also accepts an underline indented by 1-3 spaces. The escape
+  // cannot be glued onto those (the `\` would land before the spaces), so
+  // they detach with a blank line instead.
+  indentedSetextUnderline: /^ {1,3}(-+|=+)[ \t]*$/,
+  // A lone dash doubles as a bullet marker — it is a real list when inline
+  // content (image/mention) follows it on the same line.
+  soloDash: /^-[ \t]*$/,
 };
 
-/**
- * Checks if a paragraph node is empty (no visible content).
- * Empty = no trimmed text AND (no children OR only whitespace text nodes)
- * Edge cases handled:
- * - Truly empty: <p></p> → true
- * - Whitespace only: <p>   </p> → true
- * - Has image/mention: <p><image/></p> → false (not empty)
- * - Has text: <p>hello</p> → false (not empty)
- */
-const isEmptyParagraph = node => {
-  if (node.type.name !== 'paragraph') return false;
-  if (!node.textContent.trim()) {
-    // No visible text - verify it only contains text nodes (not images/mentions/etc.)
-    for (let i = 0; i < node.childCount; i++) {
-      if (!node.child(i).isText) return false;
-    }
-    return true;
-  }
-  return false;
-};
+const childrenOf = node => Array.from({ length: node.childCount }, (_, i) => node.child(i));
 
-/**
- * Checks if text starts with markdown syntax that should not be preceded by backslash.
- * Combines list syntax and block syntax detection for efficiency.
- * Detects:
- * - List markers: *, -, +, 1., 2), etc.
- * - Blockquotes: >
- * - Headings: #, ##, ###, etc.
- * - Code fences: ```, ~~~
- * - Thematic breaks: ---, ***, ___
- */
+// An empty visual line: no visible text, only whitespace / hard_break children.
+// Unifies Enter (empty paragraph) and Shift+Enter (break-only paragraph).
+const isEmptyParagraph = node =>
+  node.type.name === 'paragraph' &&
+  !node.textContent.trim() &&
+  childrenOf(node).every(child => child.isText || child.type.name === 'hard_break');
+
+// Markdown syntax that must start its own line — never glue a `\` before it
 const startsWithMarkdownSyntax = text => {
-  if (!text) return false;
-  const trimmed = text.trim();
+  const trimmed = (text || '').trim();
   return MARKDOWN_PATTERNS.list.test(trimmed) || MARKDOWN_PATTERNS.blockStart.test(trimmed) || MARKDOWN_PATTERNS.tableRow.test(trimmed);
 };
 
-// Find first non-empty sibling (skips multiple empty paragraphs)
-// dir: 1 = next, -1 = prev | Returns node type name or null
+// Nearest non-empty sibling in a direction (1 = next, -1 = prev); null if none
 const findNonEmptySibling = (parent, index, dir) => {
-  for (let i = index + dir; dir > 0 ? i < parent.childCount : i >= 0; i += dir) {
-    const child = parent.child(i);
-    if (!isEmptyParagraph(child)) return child.type.name;
+  for (let i = index + dir; i >= 0 && i < parent.childCount; i += dir) {
+    if (!isEmptyParagraph(parent.child(i))) return parent.child(i);
   }
   return null;
 };
 
-// True if nearest non-empty sibling (either direction) is a block element
-// Edge case: multiple empty paragraphs before block → all skip backslash
 const adjacentToBlock = (parent, index) =>
-  BLOCK_TYPES.has(findNonEmptySibling(parent, index, 1)) ||
-  BLOCK_TYPES.has(findNonEmptySibling(parent, index, -1));
+  BLOCK_TYPES.has(findNonEmptySibling(parent, index, 1)?.type.name) ||
+  BLOCK_TYPES.has(findNonEmptySibling(parent, index, -1)?.type.name);
 
-// Full line text from `start` — joins consecutive text siblings, since marks
-// (link/bold) split a line into multiple text nodes ("- " + linked url)
-const lineTextFrom = (parent, start) => {
-  let text = '';
-  for (let i = start; i < parent.childCount && parent.child(i).isText; i++) {
-    text += parent.child(i).text;
-  }
-  return text;
+// The visual line starting at `start`: its text (joining consecutive text
+// siblings, since marks split a line into multiple text nodes) and whether
+// that run closes the line — an atom sibling (image/mention) continues it.
+// A whitespace-only marked node does not count as marked: the serializer
+// expels enclosing whitespace, so it emits no mark syntax into the line.
+const lineFrom = (parent, start) => {
+  const rest = childrenOf(parent).slice(start);
+  const stop = rest.findIndex(child => !child.isText);
+  const run = stop < 0 ? rest : rest.slice(0, stop);
+  return {
+    text: run.map(child => child.text).join(''),
+    marked: run.some(child => child.marks.length > 0 && child.text.trim()),
+    closed: stop < 0 || rest[stop].type.name === 'hard_break',
+  };
 };
 
-// True if any sibling after `start` has content (text or children)
-const hasContentAfter = (parent, start) => {
-  for (let i = start; i < parent.childCount; i++) {
-    const child = parent.child(i);
-    if (child.childCount || child.textContent.trim()) return true;
-  }
-  return false;
+// A line cmark could read as a setext underline for the line above it, in a
+// form the escape can neutralize (unmarked, unindented — the `\` must land
+// right before the first dash). A lone dash counts only when it closes its
+// line — followed by inline content it is a real bullet marker instead.
+const isUnderline = ({ text, closed, marked }) =>
+  !marked &&
+  MARKDOWN_PATTERNS.setextUnderline.test(text) &&
+  (closed || !MARKDOWN_PATTERNS.soloDash.test(text));
+
+// Marked dashes serialize wrapped in mark syntax (**--**, `--`), which can
+// never form an underline — plain glue is safe and keeps the formatting.
+const isMarkedUnderline = ({ text, marked }) =>
+  marked && MARKDOWN_PATTERNS.setextUnderline.test(text.trim());
+
+// An unmarked underline the escape cannot reach: indented 1-3 spaces (still
+// a valid underline to cmark) — only a blank line detaches it safely.
+const isIndentedUnderline = ({ text, marked }) =>
+  !marked && MARKDOWN_PATTERNS.indentedSetextUnderline.test(text);
+
+// Trailing hard_break run of a paragraph (Shift+Enter presses at the end).
+// Whitespace-only text inside the run belongs to it — the old keymap paired
+// every break with a space. Returns the break count and the size it spans.
+const trailingBreakRun = node => {
+  const isBreak = child => child.type.name === 'hard_break';
+  const reversed = childrenOf(node).reverse();
+  const stop = reversed.findIndex(child => !isBreak(child) && !(child.isText && !child.text.trim()));
+  const tail = stop < 0 ? reversed : reversed.slice(0, stop);
+  const run = tail.slice(0, tail.map(isBreak).lastIndexOf(true) + 1);
+  return {
+    breaks: run.filter(isBreak).length,
+    size: run.reduce((total, child) => total + child.nodeSize, 0),
+  };
+};
+
+// First inline child is an atom (image/mention/tools). Never write glue before
+// these: chatwoot's signature machinery compares serializations byte for byte,
+// and the live editor's image isolation and the parser disagree about the
+// preceding empty paragraph — both sides only match when neither writes glue.
+const startsWithAtom = node => {
+  const first = node.firstChild;
+  return Boolean(first) && !first.isText && first.type.name !== 'hard_break';
+};
+
+/**
+ * Pre-serialization normalization: reduce every empty visual line to ONE
+ * canonical shape — the empty paragraph — so the serializer has a single
+ * case to encode. Trailing hard_breaks of a top-level paragraph split off
+ * into sibling empty paragraphs; a break-only paragraph becomes empty
+ * paragraphs outright. Breaks with text after them stay untouched, as does
+ * anything nested inside blockquotes, lists and tables.
+ */
+export const splitTrailingBreaks = doc => {
+  const paragraphType = doc.type.schema.nodes.paragraph;
+  const runFor = node => (node.type === paragraphType ? trailingBreakRun(node) : { breaks: 0 });
+  if (!childrenOf(doc).some(node => runFor(node).breaks)) return doc;
+
+  const blocks = childrenOf(doc).flatMap(node => {
+    const { breaks, size } = runFor(node);
+    if (!breaks) return node;
+    const rest = node.cut(0, node.content.size - size);
+    const empties = Array.from({ length: breaks }, () => paragraphType.create());
+    return isEmptyParagraph(rest) ? empties : [rest, ...empties];
+  });
+  return doc.copy(Fragment.from(blocks));
 };
 
 /**
@@ -141,21 +189,33 @@ export const list_item = (state, node) => {
   state.renderContent(node);
 };
 
-// Paragraph (Enter key)
-// Fixes: Unwanted backslash appearing before blocks or in empty lines
-// - Empty near block (list/blockquote/code) → "\n" (no backslash)
-// - Empty between text → "\\\n" (preserves blank line)
-// - Trailing empty / signature removed → "\n" (no literal "\")
-// - Single empty doc → nothing | In table → normal render
+// A non-empty paragraph serializes normally. An empty one (docs are
+// normalized first, see splitTrailingBreaks) is an empty visual line,
+// encoded as a `\` hard-break line glued to the next paragraph — the only
+// shape CommonMark round-trips, since blank lines collapse. Glue is skipped
+// where it would be misread: sole/leading/trailing position and atom-led
+// paragraphs get nothing, blocks and block-markdown lines get plain "\n",
+// and above a "--"/"==" underline the chain ends in "\\\n\\" so the escaped
+// underline cannot form a setext heading.
 export const paragraph = (state, node, parent, index) => {
-  if (isEmptyParagraph(node) && !state.inTable) {
-    if (parent.childCount === 1) return;
-    if (adjacentToBlock(parent, index)) return state.write('\n');
-    state.write(index > 0 && hasContentAfter(parent, index + 1) ? '\\\n' : '\n');
-  } else {
+  if (!isEmptyParagraph(node) || state.inTable) {
     state.renderInline(node);
     state.closeBlock(node);
+    return;
   }
+  if (parent.childCount === 1) return;
+  if (adjacentToBlock(parent, index)) return state.write('\n');
+  const next = findNonEmptySibling(parent, index, 1);
+  if (index === 0 || !next || startsWithAtom(next)) return;
+  const nextLine = lineFrom(next, 0);
+  if (isMarkedUnderline(nextLine)) return state.write('\\\n');
+  if (isUnderline(nextLine)) {
+    return state.write(isEmptyParagraph(parent.child(index + 1)) ? '\\\n' : '\\\n\\');
+  }
+  // An underline the escape cannot reach (indented) must not be glued either —
+  // it would read the glue line as a heading. Detach it with a plain newline.
+  if (isIndentedUnderline(nextLine)) return state.write('\n');
+  state.write(startsWithMarkdownSyntax(nextLine.text) ? '\n' : '\\\n');
 };
 export const image = (state, node) => {
   // blob: srcs are in-flight upload previews — autosaves must never capture them.
@@ -189,25 +249,31 @@ export const image = (state, node) => {
   );
 };
 
-// Hard break (Shift+Enter)
-// Fixes: Backslash only when followed by actual text, not on empty/trailing lines
-// - Text after → "\\\n" (line break works correctly)
-// - List syntax after ("* ", "1. ") → "\n" (user typing list)
-// - Block syntax after (">", "#", etc.) → "\n" (user typing blockquote/heading)
-// - List/block syntax split by marks ("- " + linked url) → "\n" (full line tested)
-// - Multiple hard_breaks without content → "\n" (no stray backslash)
-// - Trailing / no content after → "\n" (no literal "\" showing)
+// Hard break (Shift+Enter). Writes "\\\n" only when real content follows on
+// a later line; bare/trailing breaks write plain "\n" so no literal backslash
+// ever shows. A line of block-markdown syntax ("* ", ">", "#"…) gets "\n"
+// too, and the break directly above a "--"/"==" underline writes "\\\n\\" to
+// escape it — unless whitespace text sits between them, which would detach
+// the escape.
 export const hard_break = (state, node, parent, index) => {
-  for (let i = index + 1; i < parent.childCount; i++) {
-    const sibling = parent.child(i);
-    if (sibling.type.name === 'hard_break') continue;
-    if (sibling.isText) {
-      if (!sibling.text.trim()) continue;
-      return state.write(startsWithMarkdownSyntax(lineTextFrom(parent, i)) ? '\n' : '\\\n');
-    }
-    return state.write('\\\n');
+  const siblings = childrenOf(parent).slice(index + 1);
+  const isFiller = child => child.type.name === 'hard_break' || (child.isText && !child.text.trim());
+  const nextAt = siblings.findIndex(child => !isFiller(child));
+  if (nextAt < 0) return state.write('\n');
+
+  const next = siblings[nextAt];
+  if (!next.isText) return state.write('\\\n');
+  const line = lineFrom(parent, index + 1 + nextAt);
+  const skippedWhitespace = siblings.slice(0, nextAt).some(child => child.isText);
+  if (isMarkedUnderline(line)) return state.write('\\\n');
+  if (isUnderline(line) && !skippedWhitespace) {
+    return state.write(nextAt === 0 ? '\\\n\\' : '\\\n');
   }
-  state.write('\n');
+  // An underline the escape cannot reach (indented, or detached from the
+  // break by whitespace text) would still bind as a heading over this line —
+  // a blank line is the only safe separator.
+  if (isIndentedUnderline(line) || isUnderline(line)) return state.write('\n\n');
+  state.write(startsWithMarkdownSyntax(line.text) ? '\n' : '\\\n');
 };
 export const text = (state, node) => {
   state.text(node.text, false);
