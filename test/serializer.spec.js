@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import MarkdownIt from 'markdown-it';
 
 import { MessageMarkdownSerializer } from '../src/schema/markdown/messageSerializer';
+import { MessageMarkdownTransformer } from '../src/schema/markdown/messageParser';
 import { ArticleMarkdownSerializer } from '../src/schema/markdown/articleSerializer';
 import { messageSchema } from '../src/schema/message';
 import { fullSchema } from '../src/schema/article';
@@ -37,11 +39,20 @@ describe('hard_break', () => {
     }
   );
 
-  it.each(['> quoted', '# heading', '``` code', '---'])(
+  it.each(['> quoted', '# heading', '#', '######', '``` code', '***'])(
     'skips the backslash when the next line starts block syntax "%s"',
     line => {
       expect(serialize(doc(p(t('intro'), br(), t(line))))).toBe(
         `intro\n${line}`
+      );
+    }
+  );
+
+  it.each(['-', '- ', '--', '---', '=', '=='])(
+    'escapes the setext underline "%s" after a hard break',
+    line => {
+      expect(serialize(doc(p(t('intro'), br(), t(line))))).toBe(
+        `intro\\\n\\${line}`
       );
     }
   );
@@ -67,6 +78,20 @@ describe('hard_break', () => {
     expect(result).toBe('note\n- **important**');
   });
 
+  it('detaches an indented setext underline with a blank line', () => {
+    expect(serialize(doc(p(t('a'), br(), t('  --'))))).toBe('a\n\n  --');
+  });
+
+  it('detaches an underline separated from the break by whitespace text', () => {
+    expect(serialize(doc(p(t('a'), br(), t(' '), t('=='))))).toBe('a\n\n ==');
+  });
+
+  it('writes plain glue for a bold underline — mark syntax defuses it', () => {
+    expect(serialize(doc(p(t('a'), br(), t('--', [mark('strong')]))))).toBe(
+      'a\\\n**--**'
+    );
+  });
+
   it('keeps the backslash for a mid-sentence link that is not a list', () => {
     const result = serialize(
       doc(p(t('see'), br(), t('this '), t(URL, [mark('link', { href: URL })])))
@@ -74,8 +99,51 @@ describe('hard_break', () => {
     expect(result).toBe(`see\\\nthis <${URL}>`);
   });
 
-  it('writes a plain newline for a trailing hard break', () => {
-    expect(serialize(doc(p(t('hello'), br())))).toBe('hello\n');
+  it('drops a trailing hard break at the end of the document', () => {
+    expect(serialize(doc(p(t('hello'), br())))).toBe('hello');
+  });
+
+  it('preserves trailing hard breaks before the next paragraph', () => {
+    expect(serialize(doc(p(t('a'), br(), br()), p(t('b'))))).toBe(
+      'a\n\n\\\n\\\nb'
+    );
+  });
+
+  it('escapes the underline after trailing hard breaks', () => {
+    expect(serialize(doc(p(t('a'), br(), br()), p(t('--'))))).toBe(
+      'a\n\n\\\n\\\n\\--'
+    );
+  });
+
+  it('chains trailing hard breaks with empty paragraphs before a signature', () => {
+    expect(
+      serialize(doc(p(t('sdsd'), br(), br()), p(), p(t('--')), p(t('Thanks'))))
+    ).toBe('sdsd\n\n\\\n\\\n\\\n\\--\n\nThanks');
+  });
+
+  it('drops trailing hard breaks before a list', () => {
+    const list = messageSchema.node('bullet_list', null, [
+      messageSchema.node('list_item', null, [p(t('item'))]),
+    ]);
+    expect(serialize(doc(p(t('a'), br()), list))).toBe('a\n\n\n* item');
+  });
+
+  it('keeps every break of a multi-break run before an underline', () => {
+    expect(serialize(doc(p(t('a'), br(), br(), t('--'))))).toBe(
+      'a\\\n\\\n\\--'
+    );
+  });
+
+  it('treats legacy space-padded trailing breaks as a clean run', () => {
+    expect(
+      serialize(doc(p(t('zz '), br(), t(' '), br()), p(t('--')), p(t('Thanks'))))
+    ).toBe('zz \n\n\\\n\\\n\\--\n\nThanks');
+  });
+
+  it('absorbs whitespace after the last trailing break', () => {
+    expect(serialize(doc(p(t('a'), br(), t('  ')), p(t('b'))))).toBe(
+      'a\n\n\\\nb'
+    );
   });
 
   it('writes backslash breaks for consecutive hard breaks before text', () => {
@@ -140,14 +208,184 @@ describe('paragraph', () => {
     expect(serialize(doc(list, p(), p(t('b'))))).toBe('* item\n\n\nb');
   });
 
-  it('drops the backslash on a trailing empty paragraph', () => {
-    expect(serialize(doc(p(t('a')), p()))).toBe('a\n\n\n');
+  it('drops a trailing empty paragraph entirely', () => {
+    expect(serialize(doc(p(t('a')), p()))).toBe('a');
   });
 
   it('treats a whitespace-only paragraph as empty', () => {
     expect(serialize(doc(p(t('a')), p(t('   ')), p(t('b'))))).toBe(
       'a\n\n\\\nb'
     );
+  });
+
+  it('serializes a break-only paragraph like an empty paragraph', () => {
+    expect(serialize(doc(p(t('a')), p(br()), p(t('b'))))).toBe('a\n\n\\\nb');
+  });
+
+  it('does not strand a backslash before trailing empty-ish paragraphs', () => {
+    expect(serialize(doc(p(t('a')), p(), p(br())))).toBe('a');
+  });
+
+  it('does not strand a backslash before a trailing whitespace paragraph', () => {
+    expect(serialize(doc(p(t('a')), p(), p(t('  '))))).toBe('a');
+  });
+
+  it('escapes a setext dash underline below an empty paragraph', () => {
+    expect(serialize(doc(p(t('a')), p(), p(t('--'))))).toBe('a\n\n\\\n\\--');
+  });
+
+  it('escapes a lone dash below an empty paragraph', () => {
+    expect(serialize(doc(p(t('a')), p(), p(t('-'))))).toBe('a\n\n\\\n\\-');
+  });
+
+  it('keeps glue before a bold underline below an empty line', () => {
+    expect(serialize(doc(p(t('a')), p(), p(t('--', [mark('strong')]))))).toBe(
+      'a\n\n\\\n**--**'
+    );
+  });
+
+  it('keeps a lone dash as a list marker when an image continues its line', () => {
+    const img = messageSchema.node('image', { src: 'https://x.co/a.png' });
+    expect(serialize(doc(p(t('a')), p(), p(t('- '), img)))).toBe(
+      'a\n\n\n- ![](https://x.co/a.png)'
+    );
+  });
+
+  it('escapes a setext equals underline below an empty paragraph', () => {
+    expect(serialize(doc(p(t('a')), p(), p(t('=='))))).toBe('a\n\n\\\n\\==');
+  });
+
+  it('only the last empty line before the underline carries the escape', () => {
+    expect(serialize(doc(p(t('a')), p(), p(), p(t('--'))))).toBe(
+      'a\n\n\\\n\\\n\\--'
+    );
+  });
+
+  it('keeps empty lines above a signature without stranding a backslash', () => {
+    expect(
+      serialize(doc(p(t('hey')), p(), p(br()), p(t('--')), p(t('Thanks'))))
+    ).toBe('hey\n\n\\\n\\\n\\--\n\nThanks');
+  });
+
+  it('drops the backslash when the next paragraph starts with list syntax', () => {
+    expect(serialize(doc(p(t('a')), p(), p(t('- pasted'))))).toBe(
+      'a\n\n\n- pasted'
+    );
+  });
+
+  it('silently drops an empty paragraph before an image paragraph', () => {
+    const img = messageSchema.node('image', { src: 'https://x.co/a.png' });
+    expect(serialize(doc(p(t('a')), p(), p(img)))).toBe(
+      'a\n\n![](https://x.co/a.png)'
+    );
+  });
+
+  it('silently drops a break-only paragraph before an image paragraph', () => {
+    const img = messageSchema.node('image', { src: 'https://x.co/a.png' });
+    expect(serialize(doc(p(t('a')), p(br()), p(img)))).toBe(
+      'a\n\n![](https://x.co/a.png)'
+    );
+  });
+
+  it('drops trailing breaks before an image paragraph', () => {
+    const img = messageSchema.node('image', { src: 'https://x.co/a.png' });
+    expect(serialize(doc(p(t('a'), br()), p(img)))).toBe(
+      'a\n\n![](https://x.co/a.png)'
+    );
+  });
+
+  it('normalizes a legacy glued signature image the same as the live editor', () => {
+    const parsed = new MessageMarkdownTransformer(messageSchema).parse(
+      'Thanks \\\nSivin | Chatwoot\n\n\\\n![](https://x.co/a.png)'
+    );
+    expect(serialize(parsed)).toBe(
+      'Thanks \\\nSivin | Chatwoot\n\n![](https://x.co/a.png)'
+    );
+  });
+});
+
+describe('round-trip', () => {
+  const parse = content =>
+    new MessageMarkdownTransformer(messageSchema).parse(content);
+
+  it('is stable for the empty-line-above-signature shape', () => {
+    const first = serialize(doc(p(t('hey')), p(), p(t('--')), p(t('Thanks'))));
+    expect(first).toBe('hey\n\n\\\n\\--\n\nThanks');
+    expect(serialize(parse(first))).toBe(first);
+  });
+
+  it('is stable for chained empty lines', () => {
+    const first = serialize(doc(p(t('a')), p(), p(), p(t('b'))));
+    expect(serialize(parse(first))).toBe(first);
+  });
+
+  it('is stable for a setext underline after a hard break', () => {
+    const first = serialize(doc(p(t('intro'), br(), t('--'))));
+    expect(serialize(parse(first))).toBe(first);
+  });
+
+  it('never renders a stray backslash or accidental heading, on any renderer', () => {
+    // Chatwoot dashboard config (breaks on, setext headings off) and a
+    // strict CommonMark config — the closest markdown-it proxy for the
+    // backend's cmark (setext headings ON, breaks off).
+    const frontend = new MarkdownIt({ breaks: true }).disable(['lheading']);
+    const strict = new MarkdownIt('commonmark');
+    const img = () => messageSchema.node('image', { src: 'https://x.co/a.png' });
+    const ul = () =>
+      messageSchema.node('bullet_list', null, [
+        messageSchema.node('list_item', null, [p(t('item'))]),
+      ]);
+
+    const leads = [
+      () => [p(t('hey'))],
+      () => [p(t('hey'), br(), br())],
+      () => [p(t('hey'), br(), t(' '), br())],
+    ];
+    const middles = [
+      () => [],
+      () => [p()],
+      () => [p(br())],
+      () => [p(), p(br())],
+      () => [p(t('   '))],
+    ];
+    const enders = [
+      () => [p(t('--'))],
+      () => [p(t('=='))],
+      () => [p(t('-'))],
+      () => [p(t('- '))],
+      () => [p(t('='))],
+      () => [p(t('  --'))],
+      () => [p(t('--', [mark('strong')]))],
+      () => [p(t('- pasted'))],
+      () => [ul()],
+      () => [p(img())],
+      () => [p(t('world'))],
+      () => [],
+    ];
+
+    leads.forEach(lead => {
+      middles.forEach(middle => {
+        enders.forEach(ender => {
+          const md = serialize(
+            doc(...lead(), ...middle(), ...ender(), p(t('tail')))
+          );
+          [frontend, strict].forEach(renderer => {
+            const html = renderer.render(md);
+            expect(html, md).not.toContain('\\');
+            expect(html, md).not.toContain('<h1');
+            expect(html, md).not.toContain('<h2');
+          });
+        });
+      });
+    });
+  });
+
+  it('is stable for trailing breaks chained into a signature', () => {
+    const first = serialize(
+      doc(p(t('sdsd'), br(), br()), p(), p(t('--')), p(t('Thanks')))
+    );
+    expect(first).toBe('sdsd\n\n\\\n\\\n\\\n\\--\n\nThanks');
+    expect(serialize(parse(first))).toBe(first);
   });
 });
 
@@ -184,12 +422,14 @@ describe('hard break × paragraph combinations', () => {
   });
 
   it('c6: trailing break then new paragraph', () => {
-    expect(serialize(doc(p(t('a'), br()), p(t('b'))))).toBe('a\n\nb');
+    expect(serialize(doc(p(t('a'), br()), p(t('b'))))).toBe('a\n\n\\\nb');
   });
 
   it('c7: bare bullet marker line then new paragraph', () => {
+    // "- " alone closes its line, so it is a setext underline hazard
+    // (`x\n- ` is <h2>x</h2> in cmark), not a list marker
     expect(serialize(doc(p(t('x'), br(), t('- ')), p(t('y'))))).toBe(
-      'x\n- \n\ny'
+      'x\\\n\\- \n\ny'
     );
   });
 
@@ -240,9 +480,9 @@ describe('hard break × paragraph combinations', () => {
     ).toBe(`<${URL}>\\\ntext after`);
   });
 
-  it('c13: trailing break after a link', () => {
+  it('c13: trailing break after a link at the end of the document', () => {
     expect(serialize(doc(p(t('check '), t(URL, [linkTo(URL)]), br())))).toBe(
-      `check <${URL}>\n`
+      `check <${URL}>`
     );
   });
 
@@ -262,8 +502,8 @@ describe('hard break × paragraph combinations', () => {
     ).toBe('**bold1\\\nbold2**');
   });
 
-  it('c16: thematic break syntax after a hard break', () => {
-    expect(serialize(doc(p(t('a'), br(), t('--- '))))).toBe('a\n--- ');
+  it('c16: setext underline with trailing space after a hard break', () => {
+    expect(serialize(doc(p(t('a'), br(), t('--- '))))).toBe('a\\\n\\--- ');
   });
 
   it('c17: heading syntax after a hard break', () => {
@@ -484,5 +724,65 @@ describe('article serializer', () => {
     const result = aSerialize(aDoc(table));
     expect(result).toContain('**bold**');
     expect(result).toContain(`[link](${URL})`);
+  });
+});
+
+// The serialized markdown must mean the same thing to a strict CommonMark
+// parser (setext headings ON, soft breaks NOT rendered as <br>) — exact
+// parsed HTML, not just absence of artifacts.
+describe('strict CommonMark render agreement', () => {
+  const strict = new MarkdownIt('commonmark');
+  const render = node => strict.render(serialize(node));
+
+  it('parses a hard break as <br>', () => {
+    expect(render(doc(p(t('one'), br(), t('two'))))).toBe('<p>one<br />\ntwo</p>\n');
+  });
+
+  it('parses an empty line as a leading <br> on the next paragraph', () => {
+    expect(render(doc(p(t('a')), p(), p(t('b'))))).toBe('<p>a</p>\n<p><br />\nb</p>\n');
+  });
+
+  it('parses two empty lines as two leading <br>s', () => {
+    expect(render(doc(p(t('a')), p(), p(), p(t('b'))))).toBe('<p>a</p>\n<p><br />\n<br />\nb</p>\n');
+  });
+
+  it('parses the escaped signature delimiter as literal text, not a heading', () => {
+    expect(render(doc(p(t('hey')), p(), p(t('--'))))).toBe('<p>hey</p>\n<p><br />\n--</p>\n');
+  });
+
+  it('parses a lone dash after a hard break as literal text, not a heading', () => {
+    expect(render(doc(p(t('a'), br(), t('-'))))).toBe('<p>a<br />\n-</p>\n');
+  });
+
+  it('parses an equals underline below an empty line as literal text', () => {
+    expect(render(doc(p(t('a')), p(), p(t('=='))))).toBe('<p>a</p>\n<p><br />\n==</p>\n');
+  });
+});
+
+// The article serializer shares the paragraph/hard_break serializers and the
+// splitTrailingBreaks normalization — pin the same break/underline behavior
+// on the article schema (P2: article coverage).
+describe('article serializer break handling', () => {
+  const aBr = () => fullSchema.node('hard_break');
+  const aStrong = () => fullSchema.marks.strong.create();
+
+  it('escapes a lone dash after a hard break', () => {
+    expect(aSerialize(aDoc(aP(aT('a'), aBr(), aT('-'))))).toBe('a\\\n\\-');
+  });
+
+  it('escapes the signature-style underline below an empty paragraph', () => {
+    expect(aSerialize(aDoc(aP(aT('a')), aP(), aP(aT('--'))))).toBe('a\n\n\\\n\\--');
+  });
+
+  it('splits trailing breaks into empty lines before the next paragraph', () => {
+    expect(aSerialize(aDoc(aP(aT('a'), aBr(), aBr()), aP(aT('b'))))).toBe('a\n\n\\\n\\\nb');
+  });
+
+  it('keeps bold dashes bold after a hard break', () => {
+    expect(aSerialize(aDoc(aP(aT('a'), aBr(), aT('--', [aStrong()]))))).toBe('a\\\n**--**');
+  });
+
+  it('detaches an indented underline with a blank line', () => {
+    expect(aSerialize(aDoc(aP(aT('a'), aBr(), aT('  =='))))).toBe('a\n\n  ==');
   });
 });

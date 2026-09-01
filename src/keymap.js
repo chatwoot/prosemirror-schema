@@ -290,11 +290,12 @@ export function baseKeyMaps(schema) {
   if (schema.nodes.hard_break) {
     let br = schema.nodes.hard_break,
       cmd = chainCommands(exitCode, (state, dispatch) => {
+        // inheritMarks: false — a break inheriting an active link mark used
+        // to serialize as a link around the backslash and break parsing (the
+        // old workaround inserted a space before every break instead, which
+        // polluted messages with trailing spaces)
         dispatch(
-          state.tr
-            .insertText(` `)
-            .replaceSelectionWith(br.create())
-            .scrollIntoView()
+          state.tr.replaceSelectionWith(br.create(), false).scrollIntoView()
         );
         return true;
       });
