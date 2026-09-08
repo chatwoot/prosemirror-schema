@@ -18,8 +18,17 @@ import {
   link,
   code,
 } from './serializer';
+import { splitTrailingBreaks } from './serializer';
 
-export const MessageMarkdownSerializer = new MarkdownSerializerBase(
+// Normalizes the doc before serializing so every empty visual line reaches
+// the node serializers in one canonical shape (see splitTrailingBreaks)
+class NormalizingMarkdownSerializer extends MarkdownSerializerBase {
+  serialize(content, options) {
+    return super.serialize(splitTrailingBreaks(content), options);
+  }
+}
+
+export const MessageMarkdownSerializer = new NormalizingMarkdownSerializer(
   {
     mention,
     blockquote,
