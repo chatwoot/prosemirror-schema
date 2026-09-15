@@ -298,29 +298,35 @@ function serializeLinkHref(state, href) {
   return state.esc(href.replace(/\s/g, encodeURIComponent)).replace(/[()]/g, '\\$&');
 }
 
-// Serialize cell inline content to a markdown string (preserves marks)
+// Serialize cell content to one markdown line (keeps marks). Line breaks and
+// extra paragraphs become spaces: a markdown cell can't hold more than a line.
 function serializeCellContent(state, cell) {
-  const parts = [];
+  const lines = [];
   cell.forEach(block => {
-    if (block.type.name === 'paragraph') {
-      block.forEach(child => {
-        // Escape pipes so cell text can't add column boundaries on re-parse
-        let t = (child.text || '').replace(/\|/g, '\\|');
-        if (child.marks) {
-          child.marks.forEach(mark => {
-            const wrapper = MARK_WRAPPERS[mark.type.name];
-            if (wrapper) {
-              t = wrapper[0] + t + wrapper[1];
-            } else if (mark.type.name === 'link' && mark.attrs.href) {
-              t = '[' + t + '](' + serializeLinkHref(state, mark.attrs.href) + ')';
-            }
-          });
-        }
-        parts.push(t);
-      });
-    }
+    if (block.type.name !== 'paragraph') return;
+    const parts = [];
+    block.forEach(child => {
+      if (child.type.name === 'hard_break') {
+        parts.push(' ');
+        return;
+      }
+      // Escape pipes so cell text can't add column boundaries on re-parse
+      let t = (child.text || '').replace(/\|/g, '\\|');
+      if (child.marks) {
+        child.marks.forEach(mark => {
+          const wrapper = MARK_WRAPPERS[mark.type.name];
+          if (wrapper) {
+            t = wrapper[0] + t + wrapper[1];
+          } else if (mark.type.name === 'link' && mark.attrs.href) {
+            t = '[' + t + '](' + serializeLinkHref(state, mark.attrs.href) + ')';
+          }
+        });
+      }
+      parts.push(t);
+    });
+    lines.push(parts.join(''));
   });
-  return parts.join('');
+  return lines.filter(Boolean).join(' ');
 }
 
 // Flatten first-row colwidths into the comment marker the parser re-applies on load.
