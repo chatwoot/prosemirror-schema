@@ -239,13 +239,15 @@ export function tableControlsPlugin(schema) {
     const cr = cellEl.getBoundingClientRect();
     const rtl = isRTL(currentTableEl);
     const scrollBox = getScrollBox();
+    const inView = (rect) =>
+      Math.min(rect.bottom, scrollBox.bottom) > Math.max(rect.top, scrollBox.top);
 
     // Column grip: above the table, centered on the hovered column
     colGrip.style.left = cr.left + cr.width / 2 - 8 + "px";
     colGrip.style.top = clampTop(tr.top - 16, 14, scrollBox) + "px";
     colGrip.style.width = "16px";
     colGrip.style.height = "14px";
-    colGrip.style.display = "flex";
+    colGrip.style.display = inView(tr) ? "flex" : "none";
 
     // Row grip: to the left (or right in RTL), aligned with the hovered row
     const rowEl = cellEl.closest("tr");
@@ -259,7 +261,7 @@ export function tableControlsPlugin(schema) {
       rowGrip.style.top = clampTop(rr.top + rr.height / 2 - 7, 16, scrollBox) + "px";
       rowGrip.style.width = "14px";
       rowGrip.style.height = "16px";
-      rowGrip.style.display = "flex";
+      rowGrip.style.display = inView(rr) ? "flex" : "none";
     }
   };
 
