@@ -1,6 +1,7 @@
 import { Schema } from 'prosemirror-model';
 import { orderedList, bulletList, listItem } from 'prosemirror-schema-list';
 import { schema as baseSchema } from 'prosemirror-markdown';
+import { createTableNodes } from './tableSpecs';
 
 /**
  * Build a schema with only specified marks and nodes enabled
@@ -20,6 +21,7 @@ export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link
   const hasCodeBlock = enabledNodes.includes('codeBlock');
   const hasBlockquote = enabledNodes.includes('blockquote');
   const hasImage = enabledNodes.includes('image');
+  const hasTable = enabledNodes.includes('table');
 
   // Define nodes - copy from messageSchema but with restricted marks
   const nodes = {
@@ -91,6 +93,8 @@ export function buildMessageSchema(enabledMarks = ['strong', 'em', 'code', 'link
         marks: marksString,
       }),
     } : {}),
+    // A markdown table cell is one line of text, so cells only hold paragraphs
+    ...(hasTable ? createTableNodes('paragraph+') : {}),
     mention: {
       attrs: {
         userFullName: { default: '' },

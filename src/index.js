@@ -17,6 +17,7 @@ import {
 import buildMenuOptions from "./menu/menuOptions";
 import { autoLinkURLs } from "./plugins/autoLink";
 import { tableControlsPlugin } from "./plugins/table";
+import tableHeaderRowPlugin from "./plugins/tableHeaderRow";
 import isolateImagesPlugin from "./plugins/isolateImages";
 import { openLinkOnClick } from "./plugins/openLinkOnClick";
 
@@ -55,6 +56,7 @@ export const buildEditor = ({
   methods: { onImageUpload, onCopilotClick } = {},
   plugins = [],
   enabledMenuOptions,
+  resizableTableColumns = true,
 }) =>
   [
     ...(plugins || []),
@@ -69,9 +71,10 @@ export const buildEditor = ({
     listInputRules(schema),
     dropCursor(),
     gapCursor(),
-    schema.nodes.table ? columnResizing({ cellMinWidth: 50 }) : null,
+    schema.nodes.table && resizableTableColumns ? columnResizing({ cellMinWidth: 50 }) : null,
     schema.nodes.table ? tableEditing() : null,
     schema.nodes.table ? tableControlsPlugin(schema) : null,
+    schema.nodes.table ? tableHeaderRowPlugin(schema) : null,
     // editor with images (messages and articles): keep each image alone on its line.
     schema.nodes.image ? isolateImagesPlugin() : null,
     Placeholder(placeholder),

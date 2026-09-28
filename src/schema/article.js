@@ -1,19 +1,7 @@
 import { orderedList, bulletList, listItem } from 'prosemirror-schema-list';
-import { tableNodes } from 'prosemirror-tables';
 import { Schema } from 'prosemirror-model';
 import { schema } from 'prosemirror-markdown';
-
-const tableNodeSpecs = tableNodes({
-  tableGroup: 'block',
-  cellContent: 'block+',
-});
-
-// Wrap table in a scrollable div for horizontal overflow
-tableNodeSpecs.table.toDOM = () => ['div', { class: 'tableWrapper' }, ['table', ['tbody', 0]]];
-tableNodeSpecs.table.parseDOM = [
-  { tag: 'div.tableWrapper table' },
-  { tag: 'table' },
-];
+import { createTableNodes } from './tableSpecs';
 
 const baseImage = schema.spec.nodes.get('image');
 const image = {
@@ -62,7 +50,7 @@ export const fullSchema = new Schema({
       group: 'block',
     }),
     list_item: Object.assign(listItem, { content: 'paragraph block*' }),
-    ...tableNodeSpecs,
+    ...createTableNodes('block+'),
   },
   marks: {
     link: schema.spec.marks.get('link'),

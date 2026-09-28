@@ -17,6 +17,10 @@ import {
   strong,
   link,
   code,
+  table,
+  table_row,
+  table_cell,
+  table_header,
 } from './serializer';
 import { splitTrailingBreaks } from './serializer';
 
@@ -41,6 +45,10 @@ export const MessageMarkdownSerializer = new NormalizingMarkdownSerializer(
     hard_break,
     text,
     tools,
+    table,
+    table_row,
+    table_cell,
+    table_header,
   },
   {
     em,

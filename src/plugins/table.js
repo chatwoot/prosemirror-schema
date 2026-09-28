@@ -164,8 +164,6 @@ export function tableControlsPlugin(schema) {
     currentTableEl = tableEl;
     ensureElements();
     positionAddButtons();
-    rowBtn.style.display = "flex";
-    colBtn.style.display = "flex";
   };
 
   // Get the visible boundary — .tableWrapper if it exists, otherwise the editor DOM
@@ -189,21 +187,38 @@ export function tableControlsPlugin(schema) {
     return { left, right, width: Math.max(0, right - left) };
   };
 
+  // The editor's own scroll box (the fixed-height reply editor), which the
+  // position:fixed controls must stay inside. Unbounded when it doesn't scroll.
+  const getScrollBox = () => {
+    const { dom } = editorView;
+    return dom.scrollHeight > dom.clientHeight
+      ? dom.getBoundingClientRect()
+      : { top: -Infinity, bottom: Infinity };
+  };
+
+  const clampTop = (top, height, box) =>
+    Math.min(Math.max(top, box.top), box.bottom - height);
+
   const positionAddButtons = () => {
     if (!currentTableEl || !rowBtn || !editorView) return;
     const x = getVisibleTableX();
     if (!x) return;
     const tr = currentTableEl.getBoundingClientRect(); // table rect (for vertical bounds)
     const rtl = isRTL(currentTableEl);
+    const scrollBox = getScrollBox();
+    const top = Math.max(tr.top, scrollBox.top);
+    const bottom = Math.min(tr.bottom, scrollBox.bottom);
 
-    // Row button: spans the visible table width, below the table
+    // Row button: spans the visible table width, below the table while its end is in view
+    rowBtn.style.display =
+      tr.bottom >= scrollBox.top && tr.bottom <= scrollBox.bottom ? "flex" : "none";
     rowBtn.style.left = x.left + "px";
-    rowBtn.style.top = tr.bottom + "px";
+    rowBtn.style.top = clampTop(tr.bottom, 18, scrollBox) + "px";
     rowBtn.style.width = x.width + "px";
     rowBtn.style.height = "18px";
 
-    // Col button: at the table's inline-end edge, table's vertical position & height
-    colBtn.style.display = "flex";
+    // Col button: at the table's inline-end edge, along its visible height
+    colBtn.style.display = bottom > top ? "flex" : "none";
     if (rtl) {
       colBtn.style.left = x.left - 20 + "px";
       colBtn.style.borderRadius = "4px 0 0 4px";
@@ -211,9 +226,9 @@ export function tableControlsPlugin(schema) {
       colBtn.style.left = x.right + 2 + "px";
       colBtn.style.borderRadius = "0 4px 4px 0";
     }
-    colBtn.style.top = tr.top + "px";
+    colBtn.style.top = top + "px";
     colBtn.style.width = "18px";
-    colBtn.style.height = tr.height + "px";
+    colBtn.style.height = bottom - top + "px";
   };
 
   const positionGrips = (cellEl) => {
@@ -223,13 +238,16 @@ export function tableControlsPlugin(schema) {
     const tr = currentTableEl.getBoundingClientRect(); // table vertical bounds
     const cr = cellEl.getBoundingClientRect();
     const rtl = isRTL(currentTableEl);
+    const scrollBox = getScrollBox();
+    const inView = (rect) =>
+      Math.min(rect.bottom, scrollBox.bottom) > Math.max(rect.top, scrollBox.top);
 
     // Column grip: above the table, centered on the hovered column
     colGrip.style.left = cr.left + cr.width / 2 - 8 + "px";
-    colGrip.style.top = tr.top - 16 + "px";
+    colGrip.style.top = clampTop(tr.top - 16, 14, scrollBox) + "px";
     colGrip.style.width = "16px";
     colGrip.style.height = "14px";
-    colGrip.style.display = "flex";
+    colGrip.style.display = inView(tr) ? "flex" : "none";
 
     // Row grip: to the left (or right in RTL), aligned with the hovered row
     const rowEl = cellEl.closest("tr");
@@ -240,10 +258,10 @@ export function tableControlsPlugin(schema) {
       } else {
         rowGrip.style.left = x.left - 18 + "px";
       }
-      rowGrip.style.top = rr.top + rr.height / 2 - 7 + "px";
+      rowGrip.style.top = clampTop(rr.top + rr.height / 2 - 7, 16, scrollBox) + "px";
       rowGrip.style.width = "14px";
       rowGrip.style.height = "16px";
-      rowGrip.style.display = "flex";
+      rowGrip.style.display = inView(rr) ? "flex" : "none";
     }
   };
 

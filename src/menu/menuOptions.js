@@ -130,7 +130,13 @@ const insertTableItem = (schema) =>
       const headerRow = table_row.create(null, headerCells);
       const dataRow = table_row.create(null, dataCells);
       const tableNode = table.create(null, [headerRow, dataRow]);
-      dispatch(state.tr.replaceSelectionWith(tableNode).scrollIntoView());
+      const { empty, $to } = state.selection;
+      // Keep selected content: the table goes after its block instead of over it
+      // (a top-level end, e.g. select-all, has no enclosing block).
+      const tr = empty
+        ? state.tr.replaceSelectionWith(tableNode)
+        : state.tr.insert($to.depth ? $to.after() : $to.pos, tableNode);
+      dispatch(tr.scrollIntoView());
       return true;
     },
   });

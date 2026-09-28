@@ -7,9 +7,10 @@ import {
   filterMdToPmSchemaMapping,
 } from './parser';
 import { isolateImagesInDoc } from '../../plugins/isolateImages';
+import { withTableTokens } from './tableTokens';
 
 export const messageSchemaToMdMapping = {
-  nodes: { ...baseSchemaToMdMapping.nodes },
+  nodes: { ...baseSchemaToMdMapping.nodes, table: 'table' },
   marks: { ...baseSchemaToMdMapping.marks },
 };
 
@@ -34,22 +35,32 @@ export const messageMdToPmMapping = {
   },
 };
 
-const md = MarkdownIt('commonmark', {
-  html: false,
-  linkify: false,
-});
+// Rules are enabled per schema, so each schema gets its own tokenizer; a shared
+// one would leak rules (e.g. tables) into editors whose schema lacks them.
+const tokenizers = new WeakMap();
 
-md.enable([
-  // Process html entity - &#123;, &#xAF;, &quot;, ...
-  'entity',
-  // Process escaped chars and hardbreaks
-  'escape',
-]);
+const tokenizerFor = schema => {
+  if (!tokenizers.has(schema)) {
+    const md = MarkdownIt('commonmark', {
+      html: false,
+      linkify: false,
+    });
 
-md.disable(['table', 'hr', 'heading', 'lheading'], true);
+    md.enable([
+      // Process html entity - &#123;, &#xAF;, &quot;, ...
+      'entity',
+      // Process escaped chars and hardbreaks
+      'escape',
+    ]);
+
+    md.disable(['table', 'hr', 'heading', 'lheading'], true);
+    tokenizers.set(schema, schema.nodes.table ? withTableTokens(md) : md);
+  }
+  return tokenizers.get(schema);
+};
 
 export class MessageMarkdownTransformer {
-  constructor(schema, tokenizer = md) {
+  constructor(schema, tokenizer = tokenizerFor(schema)) {
     // Enable markdown plugins based on schema
     ['nodes', 'marks'].forEach(key => {
       for (const idx in messageSchemaToMdMapping[key]) {

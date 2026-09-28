@@ -101,7 +101,7 @@ export function baseKeyMaps(schema) {
     joinBackward,
     selectNodeBackward,
   ];
-  // Message editors (image, no table): let Backspace clear an image above.
+  // Editors with images: let Backspace clear an image above.
   if (schema.nodes.image) {
     backspaceList.unshift(deleteImageBackward);
   }

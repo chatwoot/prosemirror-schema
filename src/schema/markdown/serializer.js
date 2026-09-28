@@ -217,9 +217,9 @@ export const paragraph = (state, node, parent, index) => {
   if (isIndentedUnderline(nextLine)) return state.write('\n');
   state.write(startsWithMarkdownSyntax(nextLine.text) ? '\n' : '\\\n');
 };
-export const image = (state, node) => {
-  // blob: srcs are in-flight upload previews — autosaves must never capture them.
-  if ((node.attrs.src || '').startsWith('blob:')) return;
+// blob: srcs are in-flight upload previews — autosaves must never capture them.
+const imageMarkdown = (state, node) => {
+  if ((node.attrs.src || '').startsWith('blob:')) return '';
   let src = state.esc(node.attrs.src);
   if (node.attrs.height) {
     const param = `cw_image_height=${node.attrs.height}`;
@@ -239,22 +239,19 @@ export const image = (state, node) => {
       src += `?${param}`;
     }
   }
-  state.write(
+  return (
     '![' +
-      state.esc(node.attrs.alt || '') +
-      '](' +
-      src +
-      (node.attrs.title ? ' ' + state.quote(node.attrs.title) : '') +
-      ')'
+    state.esc(node.attrs.alt || '') +
+    '](' +
+    src +
+    (node.attrs.title ? ' ' + state.quote(node.attrs.title) : '') +
+    ')'
   );
 };
 
-// Hard break (Shift+Enter). Writes "\\\n" only when real content follows on
-// a later line; bare/trailing breaks write plain "\n" so no literal backslash
-// ever shows. A line of block-markdown syntax ("* ", ">", "#"…) gets "\n"
-// too, and the break directly above a "--"/"==" underline writes "\\\n\\" to
-// escape it — unless whitespace text sits between them, which would detach
-// the escape.
+export const image = (state, node) => {
+  state.write(imageMarkdown(state, node));
+};
 export const hard_break = (state, node, parent, index) => {
   const siblings = childrenOf(parent).slice(index + 1);
   const isFiller = child => child.type.name === 'hard_break' || (child.isText && !child.text.trim());
@@ -298,29 +295,39 @@ function serializeLinkHref(state, href) {
   return state.esc(href.replace(/\s/g, encodeURIComponent)).replace(/[()]/g, '\\$&');
 }
 
-// Serialize cell inline content to a markdown string (preserves marks)
+// Serialize cell content to one markdown line (keeps marks). Line breaks and
+// extra paragraphs become spaces: a markdown cell can't hold more than a line.
 function serializeCellContent(state, cell) {
-  const parts = [];
+  const lines = [];
   cell.forEach(block => {
-    if (block.type.name === 'paragraph') {
-      block.forEach(child => {
-        // Escape pipes so cell text can't add column boundaries on re-parse
-        let t = (child.text || '').replace(/\|/g, '\\|');
-        if (child.marks) {
-          child.marks.forEach(mark => {
-            const wrapper = MARK_WRAPPERS[mark.type.name];
-            if (wrapper) {
-              t = wrapper[0] + t + wrapper[1];
-            } else if (mark.type.name === 'link' && mark.attrs.href) {
-              t = '[' + t + '](' + serializeLinkHref(state, mark.attrs.href) + ')';
-            }
-          });
-        }
-        parts.push(t);
-      });
-    }
+    if (block.type.name !== 'paragraph') return;
+    const parts = [];
+    block.forEach(child => {
+      if (child.type.name === 'hard_break') {
+        parts.push(' ');
+        return;
+      }
+      if (child.type.name === 'image') {
+        parts.push(imageMarkdown(state, child));
+        return;
+      }
+      // Escape pipes so cell text can't add column boundaries on re-parse
+      let t = (child.text || '').replace(/\|/g, '\\|');
+      if (child.marks) {
+        child.marks.forEach(mark => {
+          const wrapper = MARK_WRAPPERS[mark.type.name];
+          if (wrapper) {
+            t = wrapper[0] + t + wrapper[1];
+          } else if (mark.type.name === 'link' && mark.attrs.href) {
+            t = '[' + t + '](' + serializeLinkHref(state, mark.attrs.href) + ')';
+          }
+        });
+      }
+      parts.push(t);
+    });
+    lines.push(parts.join(''));
   });
-  return parts.join('');
+  return lines.filter(Boolean).join(' ');
 }
 
 // Flatten first-row colwidths into the comment marker the parser re-applies on load.
@@ -371,13 +378,10 @@ export const table = (state, node) => {
   // First row
   renderRow(rows[0]);
 
-  // Separator after header
-  const isHeader = rows[0].childCount > 0 &&
-    rows[0].child(0).type.name === 'table_header';
-  if (isHeader) {
-    const sep = colWidths.map(w => ' ' + '-'.repeat(w) + ' ');
-    state.write('|' + sep.join('|') + '|\n');
-  }
+  // A markdown table always has a header row: the separator makes the first
+  // row the header, whatever cell type it holds
+  const sep = colWidths.map(w => ' ' + '-'.repeat(w) + ' ');
+  state.write('|' + sep.join('|') + '|\n');
 
   // Remaining rows
   for (let i = 1; i < rows.length; i++) {
