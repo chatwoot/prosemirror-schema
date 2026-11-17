@@ -295,11 +295,24 @@ function serializeLinkHref(state, href) {
   return state.esc(href.replace(/\s/g, encodeURIComponent)).replace(/[()]/g, '\\$&');
 }
 
+const CELL_LIST_TAGS = { bullet_list: 'ul', ordered_list: 'ol' };
+
+// A markdown cell can't hold a markdown list, so a list is written as inline HTML.
+function serializeCellList(state, list) {
+  const tag = CELL_LIST_TAGS[list.type.name];
+  const items = childrenOf(list).map(item => `<li>${serializeCellContent(state, item)}</li>`);
+  return `<${tag}>${items.join('')}</${tag}>`;
+}
+
 // Serialize cell content to one markdown line (keeps marks). Line breaks and
 // extra paragraphs become spaces: a markdown cell can't hold more than a line.
 function serializeCellContent(state, cell) {
   const lines = [];
   cell.forEach(block => {
+    if (CELL_LIST_TAGS[block.type.name]) {
+      lines.push(serializeCellList(state, block));
+      return;
+    }
     if (block.type.name !== 'paragraph') return;
     const parts = [];
     block.forEach(child => {
