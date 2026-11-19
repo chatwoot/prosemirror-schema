@@ -296,6 +296,8 @@ function serializeLinkHref(state, href) {
 }
 
 const CELL_LIST_TAGS = { bullet_list: 'ul', ordered_list: 'ol' };
+// Typed text that reads as a list tag is escaped, so it is not loaded back as a list.
+const TYPED_LIST_TAG = /<(?=\/?(?:ul|ol|li)>)/g;
 
 // A markdown cell can't hold a markdown list, so a list is written as inline HTML.
 function serializeCellList(state, list) {
@@ -326,6 +328,8 @@ function serializeCellContent(state, cell) {
       }
       // Escape pipes so cell text can't add column boundaries on re-parse
       let t = (child.text || '').replace(/\|/g, '\\|');
+      const isCode = child.marks.some(mark => mark.type.name === 'code');
+      if (state.options.cellLists && !isCode) t = t.replace(TYPED_LIST_TAG, '\\<');
       if (child.marks) {
         child.marks.forEach(mark => {
           const wrapper = MARK_WRAPPERS[mark.type.name];

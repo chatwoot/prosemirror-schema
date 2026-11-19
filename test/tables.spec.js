@@ -131,8 +131,18 @@ describe('lists inside article table cells', () => {
     expect(cell.textContent).toContain('<li>a</li>');
   });
 
+  it.each([
+    ['in a cell', () => docWithCell(text('Example: <ul><li>Sample</li></ul>'))],
+    ['in an item of a real list', () => docWithCell(bullet_list.create(null, [item(text('Use <li> for an item')), item(text('second'))]))],
+  ])('keeps list tags typed %s as text', (_, buildDoc) => {
+    const doc = buildDoc();
+    const back = transformer.parse(ArticleMarkdownSerializer.serialize(doc));
+    expect(back.toJSON()).toEqual(doc.toJSON());
+  });
+
   it('leaves list tags as text in message tables, whose cells only hold paragraphs', () => {
     const back = new MessageMarkdownTransformer(messageSchema).parse('| Header |\n| --- |\n| <ul><li>a</li></ul> |\n');
     expect(bodyCell(back).textContent).toBe('<ul><li>a</li></ul>');
+    expect(MessageMarkdownSerializer.serialize(back)).toContain('| <ul><li>a</li></ul> |');
   });
 });
