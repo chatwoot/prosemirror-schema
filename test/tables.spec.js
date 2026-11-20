@@ -140,6 +140,15 @@ describe('lists inside article table cells', () => {
     expect(back.toJSON()).toEqual(doc.toJSON());
   });
 
+  it.each([
+    ['at the end of an item', 'Set folder to C:\\'],
+    ['before a typed list tag', 'Use \\<li> here'],
+  ])('keeps a backslash typed %s', (_, itemText) => {
+    const doc = docWithCell(bullet_list.create(null, [item(text(itemText)), item(text('second'))]));
+    const back = transformer.parse(ArticleMarkdownSerializer.serialize(doc));
+    expect(back.toJSON()).toEqual(doc.toJSON());
+  });
+
   it('leaves list tags as text in message tables, whose cells only hold paragraphs', () => {
     const back = new MessageMarkdownTransformer(messageSchema).parse('| Header |\n| --- |\n| <ul><li>a</li></ul> |\n');
     expect(bodyCell(back).textContent).toBe('<ul><li>a</li></ul>');
