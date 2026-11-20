@@ -90,3 +90,68 @@ describe('images inside table cells', () => {
     expect(MessageMarkdownSerializer.serialize(doc)).toBe('|     |\n| --- |\n');
   });
 });
+
+describe('lists inside article table cells', () => {
+  const { table, table_row, table_header, table_cell, paragraph, bullet_list, ordered_list, list_item } = fullSchema.nodes;
+  const text = (content, marks) => paragraph.create(null, fullSchema.text(content, marks));
+  const item = (...blocks) => list_item.create(null, blocks);
+  const docWithCell = (...blocks) =>
+    fullSchema.node('doc', null, [
+      table.create(null, [
+        table_row.create(null, [table_header.create(null, text('Header'))]),
+        table_row.create(null, [table_cell.create(null, blocks)]),
+      ]),
+    ]);
+  const transformer = new ArticleMarkdownTransformer(fullSchema);
+  const bodyCell = doc => doc.firstChild.child(1).firstChild;
+
+  it('keeps a list, with its nesting and formatting, through the markdown round-trip', () => {
+    const bold = [fullSchema.marks.strong.create()];
+    const doc = docWithCell(
+      text('List:'),
+      bullet_list.create(null, [
+        item(text('Test 1')),
+        item(text('Test 2', bold), ordered_list.create(null, [item(text('tt'))])),
+      ])
+    );
+    const md = ArticleMarkdownSerializer.serialize(doc);
+    expect(md).toContain('| List: <ul><li>Test 1</li><li>**Test 2** <ol><li>tt</li></ol></li></ul> |');
+    const back = transformer.parse(md);
+    expect(back.toJSON()).toEqual(doc.toJSON());
+    expect(ArticleMarkdownSerializer.serialize(back)).toBe(md);
+  });
+
+  it.each([
+    ['in a code span', '`<ul><li>a</li></ul>`'],
+    ['left open', '<ul><li>a</li>'],
+  ])('leaves list tags %s as text', (_, cellMarkdown) => {
+    const cell = bodyCell(transformer.parse(`| Header |\n| --- |\n| ${cellMarkdown} |\n`));
+    expect(cell.childCount).toBe(1);
+    expect(cell.firstChild.type.name).toBe('paragraph');
+    expect(cell.textContent).toContain('<li>a</li>');
+  });
+
+  it.each([
+    ['in a cell', () => docWithCell(text('Example: <ul><li>Sample</li></ul>'))],
+    ['in an item of a real list', () => docWithCell(bullet_list.create(null, [item(text('Use <li> for an item')), item(text('second'))]))],
+  ])('keeps list tags typed %s as text', (_, buildDoc) => {
+    const doc = buildDoc();
+    const back = transformer.parse(ArticleMarkdownSerializer.serialize(doc));
+    expect(back.toJSON()).toEqual(doc.toJSON());
+  });
+
+  it.each([
+    ['at the end of an item', 'Set folder to C:\\'],
+    ['before a typed list tag', 'Use \\<li> here'],
+  ])('keeps a backslash typed %s', (_, itemText) => {
+    const doc = docWithCell(bullet_list.create(null, [item(text(itemText)), item(text('second'))]));
+    const back = transformer.parse(ArticleMarkdownSerializer.serialize(doc));
+    expect(back.toJSON()).toEqual(doc.toJSON());
+  });
+
+  it('leaves list tags as text in message tables, whose cells only hold paragraphs', () => {
+    const back = new MessageMarkdownTransformer(messageSchema).parse('| Header |\n| --- |\n| <ul><li>a</li></ul> |\n');
+    expect(bodyCell(back).textContent).toBe('<ul><li>a</li></ul>');
+    expect(MessageMarkdownSerializer.serialize(back)).toContain('| <ul><li>a</li></ul> |');
+  });
+});

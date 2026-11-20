@@ -57,5 +57,6 @@ export const ArticleMarkdownSerializer = new NormalizingMarkdownSerializer(
     strong,
     link,
     code,
-  }
+  },
+  { cellLists: true }
 );
