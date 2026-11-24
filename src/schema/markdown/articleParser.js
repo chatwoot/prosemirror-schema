@@ -52,7 +52,7 @@ md.enable([
   'hr',
 ]);
 
-withTableTokens(md);
+withTableTokens(md, { cellLists: true });
 
 export class ArticleMarkdownTransformer {
   constructor(schema, tokenizer = md) {
