@@ -149,6 +149,14 @@ describe('lists inside article table cells', () => {
     expect(back.toJSON()).toEqual(doc.toJSON());
   });
 
+  it.each([
+    ['a code block', fullSchema.nodes.code_block.create(null, fullSchema.text('echo hello')), '`echo hello`'],
+    ['a quote', fullSchema.nodes.blockquote.create(null, text('quoted text')), 'quoted text'],
+  ])('keeps the text of %s inside a list item', (_, block, saved) => {
+    const doc = docWithCell(bullet_list.create(null, [item(text('Run this:'), block)]));
+    expect(ArticleMarkdownSerializer.serialize(doc)).toContain(`| <ul><li>Run this: ${saved}</li></ul> |`);
+  });
+
   it('leaves list tags as text in message tables, whose cells only hold paragraphs', () => {
     const back = new MessageMarkdownTransformer(messageSchema).parse('| Header |\n| --- |\n| <ul><li>a</li></ul> |\n');
     expect(bodyCell(back).textContent).toBe('<ul><li>a</li></ul>');

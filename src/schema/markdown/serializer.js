@@ -319,7 +319,15 @@ function serializeCellContent(state, cell) {
       lines.push(serializeCellList(state, block));
       return;
     }
-    if (block.type.name !== 'paragraph') return;
+    if (block.type.spec.code) {
+      const code = block.textContent.replace(/\n/g, ' ').replace(/\|/g, '\\|');
+      lines.push(code && `\`${code}\``);
+      return;
+    }
+    if (!block.isTextblock) {
+      lines.push(serializeCellContent(state, block));
+      return;
+    }
     const parts = [];
     block.forEach(child => {
       if (child.type.name === 'hard_break') {
